@@ -5,8 +5,6 @@ and merges them into a single PDF File called *{Booktitle}.pdf*. Unfortunately,
 as of right now it seems like  links within the merged book (e.g. chapter 
 references) do not work.
 
-* This may or may not be implemented in the future.
-
 The tool will check whether you are authorized to download the book before
 downloading anything. If you are unauthorized, the program will exit.
 
