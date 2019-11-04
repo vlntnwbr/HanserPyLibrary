@@ -4,6 +4,7 @@ venv/
 logo/
 experiments/
 __pychache__/
+*.egg-info/
 
 # Files
 **.pdf
