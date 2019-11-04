@@ -31,7 +31,7 @@ if __name__ == '__main__':
         python_requires=">=3.8",
         install_requires=read_local(REQUIREMENTS, "rl"),
         license="GNU GPLv3",
-        url="",
+        url="https://github.com/vlntnwbr/HanserPyLibrary",
         maintainer="Valentin Weber",
         entrypoints={
             'console-scripts': [
