@@ -27,7 +27,7 @@ if __name__ == '__main__':
         description="Download & merge each PDF of a book from Hanser Library",
         long_description=read_local(README),
         version=VERSION,
-        packages=find_packages,
+        packages=find_packages(),
         python_requires=">=3.8",
         install_requires=read_local(REQUIREMENTS, "rl"),
         license="GNU GPLv3",
