@@ -178,7 +178,7 @@ def get_user_input():
     dir_prompt = "[OPTIONAL] Enter path to output dir: "
     while (output_dir := input(dir_prompt)) and not path.isdir(output_dir):
         print("Couldn't find directory '" + output_dir + "'")
-
+    print()
     return url.strip(), output_dir.strip()
 
 
