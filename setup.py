@@ -28,6 +28,7 @@ if __name__ == '__main__':
         long_description=read_local(README),
         version=VERSION,
         packages=find_packages(),
+        include_package_data=True,
         python_requires=">=3.8",
         install_requires=read_local(REQUIREMENTS, "rl"),
         license="GNU GPLv3",
