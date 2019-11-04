@@ -1,4 +1,5 @@
 # Directories
+dist/
 venv/
 .idea/
 logo/
