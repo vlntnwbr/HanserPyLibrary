@@ -34,6 +34,7 @@ if __name__ == '__main__':
         license="GNU GPLv3",
         url="https://github.com/vlntnwbr/HanserPyLibrary",
         maintainer="Valentin Weber",
+        maintainer_email="dev@example.com",
         entrypoints={
             'console-scripts': [
                 "hanser-py-library = hanser_py_library.main:main"
