@@ -171,6 +171,8 @@ class Application(object):
 def get_user_input():
     """Ask user for input URL and output_dir."""
 
+    print("\nStarting HanserPyLibrary")
+
     uri_prompt = "Enter URI for 'hanser-elibrary.com' book: "
     while not (url := input(uri_prompt)).startswith(Application.BASE_URL):
         uri_prompt = "Please enter a valid URI: "
