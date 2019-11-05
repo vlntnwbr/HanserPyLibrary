@@ -3,7 +3,7 @@
 from os import path
 from setuptools import find_packages, setup
 
-VERSION = "0.0.1"
+VERSION = "0.0.2"
 README = "README.md"
 REQUIREMENTS = "requirements.txt"
 HEREDIR = path.abspath(path.dirname(__file__))
@@ -34,6 +34,7 @@ if __name__ == '__main__':
         license="GNU GPLv3",
         url="https://github.com/vlntnwbr/HanserPyLibrary",
         maintainer="Valentin Weber",
+        maintainer_email="dev@example.com",
         entrypoints={
             'console-scripts': [
                 "hanser-py-library = hanser_py_library.main:main"
