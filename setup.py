@@ -41,18 +41,3 @@ if __name__ == '__main__':
             ]
         }
     )
-
-self.add_argument(
-            "-f", "--force",
-            metavar="force",
-            type=bool,
-            default=False
-        )
-
-
-def valid_dir_path(directory: str):
-    """Check if directory exists"""
-    if path.exists(directory) and not path.isfile(directory):
-        msg = f"'{directory}' is a file not a directory"
-        raise argparse.ArgumentTypeError(msg)
-    return directory
