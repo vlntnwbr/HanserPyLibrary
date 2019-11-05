@@ -6,6 +6,7 @@ merges them into a single PDF File.
 :license: GNU General Public License Version 3, see LICENSE
 """
 
+import argparse
 from collections import namedtuple
 from getpass import getuser
 from os import path, mkdir
@@ -23,7 +24,7 @@ class Application(object):
 
     BASE_URL = "https://www.hanser-elibrary.com"
 
-    def __init__(self, url: str, output_dir: str = ""):
+    def __init__(self, url: str, output_dir: str):
         self.url = url
         self.title = ""  # Book title
         self.authors = []  # List of authors
@@ -47,7 +48,6 @@ class Application(object):
         self.download_book()
         self.merge_pdf()
         self.save_book()
-        exit_script("Download and Merge complete.")
 
     def get_book_info(self):
         """Get title, authors and chapters and check authorization."""
@@ -195,13 +195,58 @@ def exit_script(message: str, code: int = 0):
     exit(code)
 
 
+def application_url(url: str):
+    """Check if URL is valid Application url"""
+    if url and not url.startswith(Application.BASE_URL):
+        msg = f"'{url}' doesn't start with '{Application.BASE_URL}'"
+        raise argparse.ArgumentTypeError(msg)
+    return url
+
+
+def existing_dir(directory: str):
+    """Check if directory exists"""
+    if directory and not path.isdir(directory):
+        msg = f"'{directory}' isn't a directory"
+        raise argparse.ArgumentTypeError(msg)
+    return directory
+
+
 def main():
     """Main entry point."""
 
-    book, output = get_user_input()
+    parser = argparse.ArgumentParser(
+        description="Download book as pdf from hanser-elibrary.com"
+    )
 
-    app = Application(book, output)
-    app.run()
+    parser.add_argument(
+        "-u", "--url",
+        metavar="url",
+        help=f"Book URL starting with '{Application.BASE_URL}'",
+        type=application_url,
+        default="",
+        nargs="*"
+    )
+
+    parser.add_argument(
+        "-o", "--out",
+        metavar="out",
+        help="Path to custom directory that already exists",
+        type=existing_dir,
+        default=""
+    )
+
+    args = parser.parse_args()
+
+    if urls := args.url:
+        for book in urls:
+            app = Application(book, args.out)
+            app.run()
+
+    else:
+        book, output = get_user_input()
+
+        app = Application(book, output)
+        app.run()
 
 
 if __name__ == '__main__':
