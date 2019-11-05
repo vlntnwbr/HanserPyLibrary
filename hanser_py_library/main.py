@@ -199,9 +199,9 @@ def existing_dir(directory: str):
 
 
 def get_console_input(get_output: bool = True) -> InputTuple or List[str]:
-    """Ask user for input URL and output_dir."""
+    """Get at least one URL and an optional output_dir if needed."""
 
-    # Make asking for output_dir optional
+    # Force Creation option for nonexistent output_dir (check if path is file)
     # Get List of URLs
     uri_prompt = "Enter URI for 'hanser-elibrary.com' book: "
     multiple_urls = "y"
@@ -214,15 +214,19 @@ def get_console_input(get_output: bool = True) -> InputTuple or List[str]:
         urls.append(url)
         if (multiple_urls := input("Add another book ? (y) ").lower()) == "y":
             try:
+                # noinspection PyUnboundLocalVariable
                 uri_prompt = original_prompt
             except UnboundLocalError:
                 continue
 
-    dir_prompt = "[OPTIONAL] Enter path to output dir: "
-    while (output_dir := input(dir_prompt)) and not path.isdir(output_dir):
-        print("Couldn't find directory '" + output_dir + "'")
+    # Get output directory
+    if get_output:
+        dir_prompt = "[OPTIONAL] Enter path to output dir: "
+        while (output_dir := input(dir_prompt)) and not path.isdir(output_dir):
+            print(f"Couldn't find directory '{output_dir}'")
 
-    return urls, output_dir
+        return urls, output_dir
+    return urls
 
 
 def validate_args(args) -> InputTuple:
@@ -259,10 +263,13 @@ def main():
     )
 
     args = parser.parse_args()
-    urls, output = validate_args(args)
+    urls, output = args.url, args.out
 
     if not urls:
-        urls, output = get_console_input()
+        if not output:
+            urls, output = get_console_input()
+        else:
+            urls = get_console_input(get_output=False)
 
     for book in urls:
         app = Application(book, output)
