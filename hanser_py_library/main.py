@@ -9,14 +9,17 @@ merges them into a single PDF File.
 import argparse
 from collections import namedtuple
 from getpass import getuser
-from os import path, mkdir
 from io import BytesIO
+from os import path, mkdir
+from typing import List, Tuple
+
 
 from bs4 import BeautifulSoup
 from PyPDF2 import PdfFileMerger
 from requests import get
 
 Chapter = namedtuple("Chapter", ["title", "href"])
+InputTuple = Tuple[List[str], str]
 
 
 class Application(object):
@@ -25,7 +28,7 @@ class Application(object):
     BASE_URL = "https://www.hanser-elibrary.com"
 
     def __init__(self, url: str, output_dir: str):
-        self.url = url
+        self.url = url.strip()
         self.title = ""  # Book title
         self.authors = []  # List of authors
         self.chapter_list = []  # Chapter: URL
@@ -39,7 +42,7 @@ class Application(object):
             )
 
         else:
-            self.output_dir = output_dir
+            self.output_dir = output_dir.strip()
 
     def run(self):
         """Starts and exists the application."""
@@ -220,11 +223,7 @@ def validate_args(args: argparse.Namespace):
     if not (urls := args.url) and args.out:
         msg = "Cannot yet provide output dir via args without providing URLs"
         raise NotImplementedError(msg)
-
-    elif urls:
-        urls = [url.strip() for url in urls]
-
-    return urls, args.out.strip()
+    return urls, args.out
 
 
 def main():
