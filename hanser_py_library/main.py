@@ -168,8 +168,11 @@ class Application(object):
         print(self.output_dir)
 
 
-def get_user_input():
+def get_console_input():
     """Ask user for input URL and output_dir."""
+
+    # Ask for multiple URLs if user wants it
+    # Make asking for output_dir optional
 
     print("\nStarting HanserPyLibrary")
 
@@ -181,7 +184,7 @@ def get_user_input():
     while (output_dir := input(dir_prompt)) and not path.isdir(output_dir):
         print("Couldn't find directory '" + output_dir + "'")
 
-    return url.strip(), output_dir.strip()
+    return [url.strip()], output_dir.strip()
 
 
 def exit_script(message: str, code: int = 0):
@@ -211,6 +214,19 @@ def existing_dir(directory: str):
     return directory
 
 
+def validate_args(args: argparse.Namespace):
+    """Validate arguments from argparse"""
+
+    if not (urls := args.url) and args.out:
+        msg = "Cannot yet provide output dir via args without providing URLs"
+        raise NotImplementedError(msg)
+
+    elif urls:
+        urls = [url.strip() for url in urls]
+
+    return urls, args.out.strip()
+
+
 def main():
     """Main entry point."""
 
@@ -236,15 +252,12 @@ def main():
     )
 
     args = parser.parse_args()
+    urls, output = validate_args(args)
 
-    if urls := args.url:
-        for book in urls:
-            app = Application(book, args.out)
-            app.run()
+    if not urls:
+        urls, output = get_console_input()
 
-    else:
-        book, output = get_user_input()
-
+    for book in urls:
         app = Application(book, output)
         app.run()
 
