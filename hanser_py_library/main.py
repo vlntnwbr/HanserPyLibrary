@@ -6,9 +6,8 @@ merges them into a single PDF File.
 :license: GNU General Public License Version 3, see LICENSE
 """
 
-import argparse
+from argparse import ArgumentParser, ArgumentTypeError, HelpFormatter
 from collections import namedtuple
-from getpass import getuser
 from io import BytesIO
 from os import path, mkdir
 from typing import List, Tuple
@@ -18,7 +17,7 @@ from PyPDF2 import PdfFileMerger
 from requests import get
 
 Chapter = namedtuple("Chapter", ["title", "href"])
-InputTuple = Tuple[List[str], str]
+ApplicationArgs = Tuple[List[str], str]
 
 
 class Application(object):
@@ -185,23 +184,69 @@ def exit_script(message: str, code: int = 0):
     exit(code)
 
 
-def application_url(url: str):
-    """Check if URL is valid Application url"""
-    if url and not url.startswith(Application.BASE_URL):
-        msg = f"'{url}' doesn't start with '{Application.BASE_URL}'"
-        raise argparse.ArgumentTypeError(msg)
-    return url
+class ApplicationArgParser(ArgumentParser):
+    """ArgumentParser that validates input"""
+    
+    def __init__(self, **parser_args):
+        super(ApplicationArgParser, self).__init__(
+            prog=parser_args.get("prog"),
+            usage=parser_args.get("usage"),
+            description=parser_args.get("description"),
+            epilog=parser_args.get("epilog"),
+            parents=parser_args.get("parents", []),
+            formatter_class=parser_args.get("formatter_class", HelpFormatter),
+            prefix_chars=parser_args.get("prefix_chars", "-"),
+            fromfile_prefix_chars=parser_args.get("fromfile_prefix_chars"),
+            argument_default=parser_args.get("argument_default", None),
+            conflict_handler=parser_args.get("confilct_handler", "error"),
+            add_help=parser_args.get("add_help", True),
+            allow_abbrev=parser_args.get("allow_abbrev", True)
+        )
+
+        self.add_application_args()
+        self.application_args = self.parse_args()
+
+    def add_application_args(self):
+        """Add application specific arguments to parser"""
+        self.add_argument(
+            "-u", "--url",
+            metavar="url",
+            help=f"Book URL starting with '{Application.BASE_URL}'",
+            type=self.application_url,
+            default="",
+            nargs="*"
+        )
+
+        self.add_argument(
+            "-o", "--out",
+            metavar="out",
+            help="Path to custom directory that already exists",
+            type=self.existing_dir,
+            default=""
+        )
+
+    def validate_application_args(self) -> ApplicationArgs:
+        """Validate arguments from argparse"""
+        return self.application_args.url, self.application_args.out
+
+    @staticmethod
+    def application_url(url: str):
+        """Check if URL is valid Application url"""
+        if url and not url.startswith(Application.BASE_URL):
+            msg = f"'{url}' doesn't start with '{Application.BASE_URL}'"
+            raise ArgumentTypeError(msg)
+        return url
+
+    @staticmethod
+    def existing_dir(directory: str):
+        """Check if directory exists"""
+        if directory and not path.isdir(directory):
+            msg = f"'{directory}' isn't a directory"
+            raise ArgumentTypeError(msg)
+        return directory
 
 
-def existing_dir(directory: str):
-    """Check if directory exists"""
-    if directory and not path.isdir(directory):
-        msg = f"'{directory}' isn't a directory"
-        raise argparse.ArgumentTypeError(msg)
-    return directory
-
-
-def get_console_input(get_output: bool = True) -> InputTuple or List[str]:
+def get_console_input(get_output: bool = True) -> ApplicationArgs or List[str]:
     """Get at least one URL and an optional output_dir if needed."""
 
     # Force Creation option for nonexistent output_dir (check if path is file)
@@ -232,41 +277,12 @@ def get_console_input(get_output: bool = True) -> InputTuple or List[str]:
     return urls
 
 
-def validate_args(args) -> InputTuple:
-    """Validate arguments from argparse"""
-
-    if not (urls := args.url) and args.out:
-        msg = "Cannot yet provide output dir via args without providing URLs"
-        raise NotImplementedError(msg)
-    return urls, args.out
-
-
 def main():
     """Main entry point."""
 
-    parser = argparse.ArgumentParser(
+    urls, output = ApplicationArgParser(
         description="Download book as pdf from hanser-elibrary.com"
-    )
-
-    parser.add_argument(
-        "-u", "--url",
-        metavar="url",
-        help=f"Book URL starting with '{Application.BASE_URL}'",
-        type=application_url,
-        default="",
-        nargs="*"
-    )
-
-    parser.add_argument(
-        "-o", "--out",
-        metavar="out",
-        help="Path to custom directory that already exists",
-        type=existing_dir,
-        default=""
-    )
-
-    args = parser.parse_args()
-    urls, output = args.url, args.out
+    ).validate_application_args()
 
     if not urls:
         if not output:
