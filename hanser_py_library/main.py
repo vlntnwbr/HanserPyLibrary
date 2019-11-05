@@ -26,7 +26,7 @@ class Application(object):
 
     BASE_URL = "https://www.hanser-elibrary.com"
 
-    def __init__(self, url: str, output_dir: str):
+    def __init__(self, url: str, output_dir: str, force_dir: bool = False):
         self.url = url.strip()
         self.title = ""  # Book title
         self.authors = []  # List of authors
@@ -35,12 +35,13 @@ class Application(object):
         self.book = PdfFileMerger()  # Merged Book
 
         if not output_dir:
+            self.force_dir = True
             self.output_dir = path.join(
-               path.expanduser("~"), "Documents", "HanserPyLibrary"
+                path.expanduser("~"), "Documents", "HanserPyLibrary"
             )
-
         else:
             self.output_dir = output_dir.strip()
+            self.force_dir = force_dir
 
     def run(self):
         """Starts and exists the application."""
@@ -48,7 +49,7 @@ class Application(object):
         self.get_book_info()
         self.download_book()
         self.merge_pdf()
-        self.save_book(self.title)
+        self.write_pdf(self.title)
 
     def get_book_info(self):
         """Get title, authors and chapters and check authorization."""
@@ -124,14 +125,13 @@ class Application(object):
             self.book.append(pdf)
         print("Merge Complete.\n")
 
-    def save_book(self, filename: str):
+    def write_pdf(self, filename: str):
         """Save merged PDF."""
 
         if len(self.book.pages) > 0:
-
             filename = safe_filename(filename)
 
-            if not path.isdir(self.output_dir):
+            if not path.isdir(self.output_dir) and self.force_dir:
                 print("Creating '" + self.output_dir + "'")
                 mkdir(self.output_dir)
 
