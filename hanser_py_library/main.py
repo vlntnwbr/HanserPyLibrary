@@ -13,7 +13,6 @@ from io import BytesIO
 from os import path, mkdir
 from typing import List, Tuple
 
-
 from bs4 import BeautifulSoup
 from PyPDF2 import PdfFileMerger
 from requests import get
@@ -36,9 +35,8 @@ class Application(object):
         self.book = PdfFileMerger()  # Merged Book
 
         if not output_dir:
-            user = path.expanduser("~" + getuser())
             self.output_dir = path.join(
-               user, "Documents", "HanserPyLibrary"
+               path.expanduser("~"), "Documents", "HanserPyLibrary"
             )
 
         else:
@@ -50,7 +48,7 @@ class Application(object):
         self.get_book_info()
         self.download_book()
         self.merge_pdf()
-        self.save_book()
+        self.save_book(self.title)
 
     def get_book_info(self):
         """Get title, authors and chapters and check authorization."""
@@ -126,12 +124,12 @@ class Application(object):
             self.book.append(pdf)
         print("Merge Complete.\n")
 
-    def save_book(self):
+    def save_book(self, filename: str):
         """Save merged PDF."""
 
         if len(self.book.pages) > 0:
 
-            filename = self.title + ".pdf"
+            filename = safe_filename(filename)
 
             if not path.isdir(self.output_dir):
                 print("Creating '" + self.output_dir + "'")
@@ -139,7 +137,7 @@ class Application(object):
 
             print("Saving '" + filename + "' to '" + self.output_dir + "'")
             self.book.write(path.join(self.output_dir, filename))
-            print("Saving successful.\n")
+            print("Done.\n")
         else:
             exit_script("No book to save.", 4)
 
@@ -169,6 +167,11 @@ class Application(object):
         print(self.chapters)
         print(len(self.book.pages))
         print(self.output_dir)
+
+
+def safe_filename(name: str):
+    """Remove most non-alum chars from string and add '.pdf'"""
+    return "".join(c for c in name if c.isalnum() or c in "- ._").strip() + ".pdf"
 
 
 def exit_script(message: str, code: int = 0):
