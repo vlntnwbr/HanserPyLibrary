@@ -171,25 +171,6 @@ class Application(object):
         print(self.output_dir)
 
 
-def get_console_input():
-    """Ask user for input URL and output_dir."""
-
-    # Ask for multiple URLs if user wants it
-    # Make asking for output_dir optional
-
-    print("\nStarting HanserPyLibrary")
-
-    uri_prompt = "Enter URI for 'hanser-elibrary.com' book: "
-    while not (url := input(uri_prompt)).startswith(Application.BASE_URL):
-        uri_prompt = "Please enter a valid URI: "
-
-    dir_prompt = "[OPTIONAL] Enter path to output dir: "
-    while (output_dir := input(dir_prompt)) and not path.isdir(output_dir):
-        print("Couldn't find directory '" + output_dir + "'")
-
-    return [url.strip()], output_dir.strip()
-
-
 def exit_script(message: str, code: int = 0):
     """Display error and wait for input to exit script"""
 
@@ -217,7 +198,34 @@ def existing_dir(directory: str):
     return directory
 
 
-def validate_args(args: argparse.Namespace):
+def get_console_input(get_output: bool = True) -> InputTuple or List[str]:
+    """Ask user for input URL and output_dir."""
+
+    # Make asking for output_dir optional
+    # Get List of URLs
+    uri_prompt = "Enter URI for 'hanser-elibrary.com' book: "
+    multiple_urls = "y"
+    urls = []
+    while multiple_urls == "y":
+        while not (url := input(uri_prompt)).startswith(Application.BASE_URL):
+            original_prompt = uri_prompt
+            uri_prompt = "Please enter a valid URI: "
+
+        urls.append(url)
+        if (multiple_urls := input("Add another book ? (y) ").lower()) == "y":
+            try:
+                uri_prompt = original_prompt
+            except UnboundLocalError:
+                continue
+
+    dir_prompt = "[OPTIONAL] Enter path to output dir: "
+    while (output_dir := input(dir_prompt)) and not path.isdir(output_dir):
+        print("Couldn't find directory '" + output_dir + "'")
+
+    return urls, output_dir
+
+
+def validate_args(args) -> InputTuple:
     """Validate arguments from argparse"""
 
     if not (urls := args.url) and args.out:
