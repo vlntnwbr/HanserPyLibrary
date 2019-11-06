@@ -185,7 +185,7 @@ def exit_script(message: str, code: int = 0):
 
 
 class ApplicationArgParser(ArgumentParser):
-    """ArgumentParser that validates input"""
+    """ArgumentParser that validates input."""
     
     def __init__(self, **parser_args):
         super(ApplicationArgParser, self).__init__(
@@ -207,7 +207,8 @@ class ApplicationArgParser(ArgumentParser):
         self.application_args = self.parse_args()
 
     def add_application_args(self):
-        """Add application specific arguments to parser"""
+        """Add application specific arguments to parser."""
+
         self.add_argument(
             "-u", "--url",
             metavar="url",
@@ -225,23 +226,50 @@ class ApplicationArgParser(ArgumentParser):
             default=""
         )
 
+        self.add_argument(
+            "-fo", "--force-out",
+            metavar="force",
+            dest="force_dir",
+            help="Output directory that is created if it doesn't exist",
+            type=self.valid_dir_path,
+            default=False
+        )
+
     def validate_application_args(self) -> ApplicationArgs:
-        """Validate arguments from argparse"""
+        """Validate arguments from argparse."""
+        urls = self.application_args.url
+        out = self.application_args.out
+        force_dir = self.application_args.force_dir
         return self.application_args.url, self.application_args.out
 
     @staticmethod
-    def application_url(url: str):
-        """Check if URL is valid Application url"""
+    def application_url(url: str) -> str:
+        """Check if URL is valid Application url."""
         if url and not url.startswith(Application.BASE_URL):
             msg = f"'{url}' doesn't start with '{Application.BASE_URL}'"
             raise ArgumentTypeError(msg)
         return url
 
     @staticmethod
-    def existing_dir(directory: str):
-        """Check if directory exists"""
-        if directory and not path.isdir(directory):
-            msg = f"'{directory}' isn't a directory"
+    def existing_dir(directory: str) -> str:
+        """Check if a path exists and is a directory"""
+        if directory:
+            msg = f"Path '{directory}' "
+            if not path.exists(directory):
+                msg += "doesn't exist"
+            elif path.isfile(directory):
+                msg += "is a file not a directory"
+            elif not path.isdir(directory):
+                msg += "is not a directory"
+            if msg[:-1] != " ":
+                raise ArgumentTypeError(msg)
+        return directory
+
+    @staticmethod
+    def valid_dir_path(directory: str) -> str:
+        """Raise error if path leads to file"""
+        if path.isfile(directory):
+            msg = f"'{directory}' is a file not a directory"
             raise ArgumentTypeError(msg)
         return directory
 
