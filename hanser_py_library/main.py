@@ -17,7 +17,7 @@ from PyPDF2 import PdfFileMerger
 from requests import get
 
 Chapter = namedtuple("Chapter", ["title", "href"])
-ApplicationArgs = Tuple[List[str], str]
+ApplicationArgs = Tuple[List[str], str, bool]
 
 
 class Application(object):
@@ -168,25 +168,11 @@ class Application(object):
         print(self.output_dir)
 
 
-def safe_filename(name: str):
-    """Remove most non-alum chars from string and add '.pdf'"""
-    return "".join(c for c in name if c.isalnum() or c in "- ._").strip() + ".pdf"
-
-
-def exit_script(message: str, code: int = 0):
-    """Display error and wait for input to exit script"""
-
-    if code:
-        message = "\n" + "ERROR: " + message
-
-    print(message)
-    input("Press ENTER to exit ")
-    exit(code)
-
-
 class ApplicationArgParser(ArgumentParser):
     """ArgumentParser that validates input."""
-    
+
+    ParserArgFlags = namedtuple("ParserArgFlags", ["short", "long"])
+
     def __init__(self, **parser_args):
         super(ApplicationArgParser, self).__init__(
             prog=parser_args.get("prog"),
@@ -198,10 +184,14 @@ class ApplicationArgParser(ArgumentParser):
             prefix_chars=parser_args.get("prefix_chars", "-"),
             fromfile_prefix_chars=parser_args.get("fromfile_prefix_chars"),
             argument_default=parser_args.get("argument_default", None),
-            conflict_handler=parser_args.get("confilct_handler", "error"),
+            conflict_handler=parser_args.get("conflict_handler", "error"),
             add_help=parser_args.get("add_help", True),
             allow_abbrev=parser_args.get("allow_abbrev", True)
         )
+
+        self.url = self.ParserArgFlags("-u", "--url")
+        self.out = self.ParserArgFlags("-o", "--out")
+        self.force = self.ParserArgFlags("-fo", "--force-out")
 
         self.add_application_args()
         self.application_args = self.parse_args()
@@ -210,37 +200,52 @@ class ApplicationArgParser(ArgumentParser):
         """Add application specific arguments to parser."""
 
         self.add_argument(
-            "-u", "--url",
-            metavar="url",
+            self.url.short, self.url.long,
+            metavar="URL",
             help=f"Book URL starting with '{Application.BASE_URL}'",
             type=self.application_url,
             default="",
             nargs="*"
         )
 
+        out_help = "Path to custom output directory "
         self.add_argument(
-            "-o", "--out",
-            metavar="out",
-            help="Path to custom directory that already exists",
+            self.out.short, self.out.long,
+            metavar="OUT",
+            help=out_help + "that already exists",
             type=self.existing_dir,
             default=""
         )
 
         self.add_argument(
-            "-fo", "--force-out",
-            metavar="force",
-            dest="force_dir",
-            help="Output directory that is created if it doesn't exist",
+            self.force.short, self.force.long,
+            metavar="FORCE",
+            dest="force",
+            help=out_help + "that is created if it doesn't exist",
             type=self.valid_dir_path,
             default=False
         )
 
     def validate_application_args(self) -> ApplicationArgs:
         """Validate arguments from argparse."""
-        urls = self.application_args.url
-        out = self.application_args.out
-        force_dir = self.application_args.force_dir
-        return self.application_args.url, self.application_args.out
+        parsed_out = self.application_args.out
+        parsed_force = self.application_args.force
+
+        if parsed_out and parsed_force and (parsed_out != parsed_force):
+            msg = f"arguments {'/'.join(self.out)} & {'/'.join(self.force)} " \
+                  f"cannot have different values if both are provided"
+            self.error(msg)  # exits with proper argparse.ArgumentError
+        elif parsed_force:
+            out = parsed_force
+            force = True
+        elif parsed_out:
+            out = parsed_out
+            force = False
+        else:
+            out = ""
+            force = False
+
+        return self.application_args.url, out, force
 
     @staticmethod
     def application_url(url: str) -> str:
@@ -261,7 +266,7 @@ class ApplicationArgParser(ArgumentParser):
                 msg += "is a file not a directory"
             elif not path.isdir(directory):
                 msg += "is not a directory"
-            if msg[:-1] != " ":
+            if msg[-1] != " ":
                 raise ArgumentTypeError(msg)
         return directory
 
@@ -272,6 +277,22 @@ class ApplicationArgParser(ArgumentParser):
             msg = f"'{directory}' is a file not a directory"
             raise ArgumentTypeError(msg)
         return directory
+
+
+def safe_filename(name: str):
+    """Remove most non-alum chars from string and add '.pdf'"""
+    return "".join(c for c in name if c.isalnum() or c in "- ._").strip() + ".pdf"
+
+
+def exit_script(message: str, code: int = 0):
+    """Display error and wait for input to exit script"""
+
+    if code:
+        message = "\n" + "ERROR: " + message
+
+    print(message)
+    input("Press ENTER to exit ")
+    exit(code)
 
 
 def get_console_input(get_output: bool = True) -> ApplicationArgs or List[str]:
@@ -308,18 +329,19 @@ def get_console_input(get_output: bool = True) -> ApplicationArgs or List[str]:
 def main():
     """Main entry point."""
 
-    urls, output = ApplicationArgParser(
+    urls, output, force = ApplicationArgParser(
         description="Download book as pdf from hanser-elibrary.com"
     ).validate_application_args()
 
     if not urls:
+        force = False
         if not output:
             urls, output = get_console_input()
         else:
             urls = get_console_input(get_output=False)
 
     for book in urls:
-        app = Application(book, output)
+        app = Application(book, output, force)
         app.run()
 
 
