@@ -24,14 +24,10 @@ ApplicationArgs = Tuple[List[str], str, bool]
 class Application(object):
     """Application class."""
 
-    BASE_URL = "https://www.hanser-elibrary.com"
+    HANSER_URL = "https://www.hanser-elibrary.com"
 
-    def __init__(self, url: str, output_dir: str, force_dir: bool = False):
-        self.url = url.strip()
-        self.title = ""  # Book title
-        self.authors = []  # List of authors
-        self.chapter_list = []  # Chapter: URL
-        self.chapters = []  # Contains downloaded PDFs
+    def __init__(self, output_dir: str, force_dir: bool = False):
+        self.pdf_list = []  # Contains downloaded PDFs
         self.book = PdfFileMerger()  # Merged Book
 
         if not output_dir:
@@ -43,63 +39,49 @@ class Application(object):
             self.output_dir = output_dir.strip()
             self.force_dir = force_dir
 
-    def run(self):
-        """Starts and exists the application."""
-
-        self.get_book_info()
-        self.download_book()
-        self.merge_pdf()
-        self.write_pdf(self.title)
-
-    def get_book_info(self):
+    def hanser_download(self, url: str):
         """Get title, authors and chapters and check authorization."""
 
-        response = get(self.url)
+        response = get(url.strip())
         book = BeautifulSoup(response.content, "html.parser")
 
         if response.status_code == 500:
             sys.exit(book.find("p", class_="error").string)
 
-        self.title = book.find("div", id="articleToolsHeading").string.strip()
-        self.authors = [
+        title = book.find("div", id="articleToolsHeading").string.strip()
+        authors = self.authors_to_string([
             author.string for author in
             book.find_all("span", class_="NLM_string-name")
-        ]
+            ])
 
+        chapter_list = []
         for chapter in book.find_all("table", class_="articleEntry"):
 
             access = chapter.find("img", class_="accessIcon")["title"]
             if access == "no access":
-                sys.exit(f"Unauthorized to download '{self.title}'")
+                sys.exit(f"Unauthorized to download '{title}'")
 
-            title = chapter.find("span", class_="hlFld-Title").string
+            chapter_title = chapter.find("span", class_="hlFld-Title").string
             href = chapter.find("a", class_="ref nowrap pdf")["href"]
 
-            if not title:
-                title = "Chapter " + href.rsplit(".", 1)[1]
+            if not chapter_title:
+                chapter_title = "Chapter " + href.rsplit(".", 1)[1]
 
-            chapter_info = Chapter(title, href)
-            self.chapter_list.append(chapter_info)
+            chapter_info = Chapter(chapter_title, href)
+            chapter_list.append(chapter_info)
 
-    def download_book(self):
-        """Download every chapter of book."""
+        print(f"Downloading '{title}' by {authors}")
 
-        if not self.chapter_list:
-            sys.exit("No Chapters to download.")
-
-        print(
-            "Downloading '" + self.title + "' by " + self.authors_to_string()
-            )
-        for chapter in self.chapter_list:
+        pdf_list = []
+        for chapter in chapter_list:
             print("\t" + "Downloading '" + chapter.title + "'...")
-            url = self.BASE_URL + chapter.href
+            url = self.HANSER_URL + chapter.href
             download = get(url, params={"download": "true"})
             content = download.headers["Content-Type"].split(";", 1)[0]
 
             if download.status_code == 200:
                 if content == "application/pdf":
-                    pdf = BytesIO(download.content)
-                    self.chapters.append(pdf)
+                    pdf_list.append(BytesIO(download.content))
 
                 else:
                     sys.exit(f"'{url}' sent {content} not 'application/pdf'")
@@ -109,15 +91,17 @@ class Application(object):
                 sys.exit(f"'{url}' sent Response Code: {code}")
 
         print("Download Successful.\n")
+        self.merge_pdf(pdf_list, title)
+        self.write_pdf(title)
 
-    def merge_pdf(self):
-        """Merges all chapters into one PDF file."""
+    def merge_pdf(self, pdf_list: List[BytesIO], title: str):
+        """Merges all PDFs in pdf_list into one PDF file."""
 
-        if not self.chapters:
+        if not pdf_list:
             sys.exit("No PDFs to merge.")
 
-        print("Start Merging '" + self.title + "'")
-        for pdf in self.chapters:
+        print("Start Merging '" + title + "'")
+        for pdf in pdf_list:
             self.book.append(pdf)
         print("Merge Complete.\n")
 
@@ -137,23 +121,24 @@ class Application(object):
         else:
             sys.exit("No book to save.")
 
-    def authors_to_string(self) -> str:
+    @staticmethod
+    def authors_to_string(authors: List[str]) -> str:
         """Return joined string of author names."""
 
-        authors = ""
-        for i in range(len(self.authors)):
-            names = self.authors[i].split(",")
+        string = ""
+        for i in range(len(authors)):
+            names = authors[i].split(",")
 
             if i == 0:
                 sep = ""
-            elif i == len(self.authors) - 1 and i != 0:
+            elif i == len(authors) - 1 and i != 0:
                 sep = " and "
             else:
                 sep = ", "
 
-            authors += sep + names[1].strip() + " " + names[0].strip()
+            string += sep + names[1].strip() + " " + names[0].strip()
 
-        return authors
+        return string
 
 
 class ApplicationArgParser(ArgumentParser):
@@ -190,7 +175,7 @@ class ApplicationArgParser(ArgumentParser):
         self.add_argument(
             self.url.short, self.url.long,
             metavar="URL",
-            help=f"Book URL starting with '{Application.BASE_URL}'",
+            help=f"Book URL starting with '{Application.HANSER_URL}'",
             type=self.application_url,
             default="",
             nargs="*"
@@ -235,8 +220,8 @@ class ApplicationArgParser(ArgumentParser):
     @staticmethod
     def application_url(url: str) -> str:
         """Check if URL is valid Application url."""
-        if url and not url.startswith(Application.BASE_URL):
-            msg = f"'{url}' doesn't start with '{Application.BASE_URL}'"
+        if url and not url.startswith(Application.HANSER_URL):
+            msg = f"'{url}' doesn't start with '{Application.HANSER_URL}'"
             raise ArgumentTypeError(msg)
         return url
 
@@ -277,7 +262,7 @@ def get_console_input(get_output: bool = True) -> ApplicationArgs or List[str]:
     urls = []
     while multiple_urls == "y":
         uri_prompt = "Enter URI for 'hanser-elibrary.com' book: "
-        while not (url := input(uri_prompt)).startswith(Application.BASE_URL):
+        while not (url := input(uri_prompt)).startswith(Application.HANSER_URL):
             # original_prompt = uri_prompt
             uri_prompt = "Please enter a valid URI: "
 
@@ -317,8 +302,8 @@ def main():
             urls = get_console_input(get_output=False)
 
     for book in urls:
-        app = Application(book, output, force)
-        app.run()
+        app = Application(output, force)
+        app.hanser_download(book)
 
 
 if __name__ == '__main__':
