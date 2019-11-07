@@ -1,5 +1,5 @@
 """
-This tool downloads each chapter of a merger from hanser-elibrary.com and
+This tool downloads each chapter of a book from hanser-elibrary.com and
 merges them into a single PDF File.
 
 :copyright: (c) 2019 by Valentin Weber
@@ -122,7 +122,7 @@ class Application(object):
             print("Done.\n")
             self.merger = PdfFileMerger()
         else:
-            sys.exit("No merger to save.")
+            sys.exit("No book to save.")
 
     @staticmethod
     def authors_to_string(authors: List[str]) -> str:
@@ -265,13 +265,13 @@ def get_console_input(get_output: bool = True) -> ApplicationArgs or List[str]:
     multiple_urls = "y"
     urls = []
     while multiple_urls == "y":
-        uri_prompt = "Enter URI for 'hanser-elibrary.com' merger: "
+        uri_prompt = "Enter URI for 'hanser-elibrary.com' book: "
         while not (url := input(uri_prompt)).startswith(Application.HANSER_URL):
             # original_prompt = uri_prompt
             uri_prompt = "Please enter a valid URI: "
 
         urls.append(url)
-        multiple_urls = input("Add another merger ? (y) ").lower()
+        multiple_urls = input("Add another book ? (y) ").lower()
 
     # Get output directory
     if get_output:
@@ -296,7 +296,7 @@ def main():
     """Main entry point."""
 
     urls, output, force = ApplicationArgParser(
-        description="Download merger as pdf from hanser-elibrary.com"
+        description="Download book as pdf from hanser-elibrary.com"
     ).validate_application_args()
 
     if not urls:
