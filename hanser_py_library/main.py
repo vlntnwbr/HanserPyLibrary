@@ -10,6 +10,7 @@ from argparse import ArgumentParser, ArgumentTypeError, HelpFormatter
 from collections import namedtuple
 from io import BytesIO
 from os import path, mkdir
+import sys
 from typing import List, Tuple
 
 from bs4 import BeautifulSoup
@@ -57,8 +58,7 @@ class Application(object):
         book = BeautifulSoup(response.content, "html.parser")
 
         if response.status_code == 500:
-            error = book.find("p", class_="error").string
-            exit_script(error, 500)
+            sys.exit(book.find("p", class_="error").string)
 
         self.title = book.find("div", id="articleToolsHeading").string.strip()
         self.authors = [
@@ -70,8 +70,7 @@ class Application(object):
 
             access = chapter.find("img", class_="accessIcon")["title"]
             if access == "no access":
-                error = "Unauthorized to download '" + self.title + "'"
-                exit_script(error, 401)
+                sys.exit(f"Unauthorized to download '{self.title}'")
 
             title = chapter.find("span", class_="hlFld-Title").string
             href = chapter.find("a", class_="ref nowrap pdf")["href"]
@@ -86,7 +85,7 @@ class Application(object):
         """Download every chapter of book."""
 
         if not self.chapter_list:
-            exit_script("No Chapters to download.", 1)
+            sys.exit("No Chapters to download.")
 
         print(
             "Downloading '" + self.title + "' by " + self.authors_to_string()
@@ -101,15 +100,13 @@ class Application(object):
                 if content == "application/pdf":
                     pdf = BytesIO(download.content)
                     self.chapters.append(pdf)
+
                 else:
-                    exit_script(
-                        url + "sent '" + content + "' not 'application/pdf'", 2
-                    )
+                    sys.exit(f"'{url}' sent {content} not 'application/pdf'")
+
             else:
                 code = download.status_code
-                exit_script(
-                    url + "Response Code: " + str(code), code
-                )
+                sys.exit(f"'{url}' sent Response Code: {code}")
 
         print("Download Successful.\n")
 
@@ -117,7 +114,7 @@ class Application(object):
         """Merges all chapters into one PDF file."""
 
         if not self.chapters:
-            exit_script("No chapters to merge.", 3)
+            sys.exit("No PDFs to merge.")
 
         print("Start Merging '" + self.title + "'")
         for pdf in self.chapters:
@@ -138,7 +135,7 @@ class Application(object):
             self.book.write(path.join(self.output_dir, filename))
             print("Done.\n")
         else:
-            exit_script("No book to save.", 4)
+            sys.exit("No book to save.")
 
     def authors_to_string(self) -> str:
         """Return joined string of author names."""
@@ -157,7 +154,6 @@ class Application(object):
             authors += sep + names[1].strip() + " " + names[0].strip()
 
         return authors
-
 
 
 class ApplicationArgParser(ArgumentParser):
@@ -269,19 +265,8 @@ class ApplicationArgParser(ArgumentParser):
 
 
 def safe_filename(name: str):
-    """Remove most non-alum chars from string and add '.pdf'"""
+    """Remove most non-alnum chars from string and add '.pdf'"""
     return "".join(c for c in name if c.isalnum() or c in "- ._").strip() + ".pdf"
-
-
-def exit_script(message: str, code: int = 0):
-    """Display error and wait for input to exit script"""
-
-    if code:
-        message = "\n" + "ERROR: " + message
-
-    print(message)
-    input("Press ENTER to exit ")
-    exit(code)
 
 
 def get_console_input(get_output: bool = True) -> ApplicationArgs or List[str]:
