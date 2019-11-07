@@ -238,11 +238,8 @@ class ApplicationArgParser(ArgumentParser):
         elif parsed_force:
             out = parsed_force
             force = True
-        elif parsed_out:  # test whether this is necessary
-            out = parsed_out
-            force = False
         else:
-            out = ""
+            out = parsed_out
             force = False
         # noinspection PyUnboundLocalVariable
         return self.application_args.url, out, force
@@ -298,24 +295,17 @@ def exit_script(message: str, code: int = 0):
 def get_console_input(get_output: bool = True) -> ApplicationArgs or List[str]:
     """Get at least one URL and an optional output_dir if needed."""
 
-    # Force Creation option for nonexistent output_dir (check if path is file)
-    # Put uri_prompt into first while loop, get rid of original prompt
     # Get List of URLs
-    uri_prompt = "Enter URI for 'hanser-elibrary.com' book: "
     multiple_urls = "y"
     urls = []
     while multiple_urls == "y":
+        uri_prompt = "Enter URI for 'hanser-elibrary.com' book: "
         while not (url := input(uri_prompt)).startswith(Application.BASE_URL):
-            original_prompt = uri_prompt
+            # original_prompt = uri_prompt
             uri_prompt = "Please enter a valid URI: "
 
         urls.append(url)
-        if (multiple_urls := input("Add another book ? (y) ").lower()) == "y":
-            try:
-                # noinspection PyUnboundLocalVariable
-                uri_prompt = original_prompt
-            except UnboundLocalError:
-                continue
+        multiple_urls = input("Add another book ? (y) ").lower()
 
     # Get output directory
     if get_output:
@@ -349,10 +339,9 @@ def main():
         else:
             urls = get_console_input(get_output=False)
 
-    print(output, force)
-#    for book in urls:
-#        app = Application(book, output, force)
-#        app.run()
+    for book in urls:
+        app = Application(book, output, force)
+        app.run()
 
 
 if __name__ == '__main__':
