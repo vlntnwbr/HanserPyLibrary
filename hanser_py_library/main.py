@@ -191,7 +191,7 @@ class ApplicationArgParser(ArgumentParser):
 
         self.url = self.ParserArgFlags("-u", "--url")
         self.out = self.ParserArgFlags("-o", "--out")
-        self.force = self.ParserArgFlags("-fo", "--force-out")
+        self.force = self.ParserArgFlags("-fo", "--force")
 
         self.add_application_args()
         self.application_args = self.parse_args()
@@ -233,18 +233,18 @@ class ApplicationArgParser(ArgumentParser):
 
         if parsed_out and parsed_force and (parsed_out != parsed_force):
             msg = f"arguments {'/'.join(self.out)} & {'/'.join(self.force)} " \
-                  f"cannot have different values if both are provided"
+                  f"have different values"
             self.error(msg)  # exits with proper argparse.ArgumentError
         elif parsed_force:
             out = parsed_force
             force = True
-        elif parsed_out:
+        elif parsed_out:  # test whether this is necessary
             out = parsed_out
             force = False
         else:
             out = ""
             force = False
-
+        # noinspection PyUnboundLocalVariable
         return self.application_args.url, out, force
 
     @staticmethod
@@ -299,6 +299,7 @@ def get_console_input(get_output: bool = True) -> ApplicationArgs or List[str]:
     """Get at least one URL and an optional output_dir if needed."""
 
     # Force Creation option for nonexistent output_dir (check if path is file)
+    # Put uri_prompt into first while loop, get rid of original prompt
     # Get List of URLs
     uri_prompt = "Enter URI for 'hanser-elibrary.com' book: "
     multiple_urls = "y"
@@ -318,11 +319,20 @@ def get_console_input(get_output: bool = True) -> ApplicationArgs or List[str]:
 
     # Get output directory
     if get_output:
+        force = False
         dir_prompt = "[OPTIONAL] Enter path to output dir: "
-        while (output_dir := input(dir_prompt)) and not path.isdir(output_dir):
-            print(f"Couldn't find directory '{output_dir}'")
+        while (output_dir := input(dir_prompt)) \
+                and not path.isdir(output_dir) and not force:
 
-        return urls, output_dir
+            msg = f"Directory '{output_dir}' "
+            force_out = input(msg + "doesn't exist. Create it? (y) ").lower()
+            if force_out == "y":
+                if path.isfile(output_dir):
+                    print(msg + "is a file not a directory")
+                else:
+                    force = True
+                    break
+        return urls, output_dir, force
     return urls
 
 
@@ -334,15 +344,15 @@ def main():
     ).validate_application_args()
 
     if not urls:
-        force = False
         if not output:
-            urls, output = get_console_input()
+            urls, output, force = get_console_input()
         else:
             urls = get_console_input(get_output=False)
 
-    for book in urls:
-        app = Application(book, output, force)
-        app.run()
+    print(output, force)
+#    for book in urls:
+#        app = Application(book, output, force)
+#        app.run()
 
 
 if __name__ == '__main__':
