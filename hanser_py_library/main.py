@@ -158,14 +158,6 @@ class Application(object):
 
         return authors
 
-    def print_attributes(self):
-        """Print all attributes."""
-        print(self.title)
-        print(self.authors)
-        print(self.chapter_list)
-        print(self.chapters)
-        print(len(self.book.pages))
-        print(self.output_dir)
 
 
 class ApplicationArgParser(ArgumentParser):
