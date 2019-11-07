@@ -1,5 +1,5 @@
 """
-This tool downloads each chapter of a book from hanser-elibrary.com and
+This tool downloads each chapter of a merger from hanser-elibrary.com and
 merges them into a single PDF File.
 
 :copyright: (c) 2019 by Valentin Weber
@@ -21,6 +21,7 @@ Chapter = namedtuple("Chapter", ["title", "href"])
 ApplicationArgs = Tuple[List[str], str, bool]
 
 
+# TODO Update README.md
 class Application(object):
     """Application class."""
 
@@ -28,7 +29,7 @@ class Application(object):
 
     def __init__(self, output_dir: str, force_dir: bool = False):
         self.pdf_list = []  # Contains downloaded PDFs
-        self.book = PdfFileMerger()  # Merged Book
+        self.merger = PdfFileMerger()  # Merged Book
 
         if not output_dir:
             self.force_dir = True
@@ -94,6 +95,7 @@ class Application(object):
         self.merge_pdf(pdf_list, title)
         self.write_pdf(title)
 
+    # TODO Merge methods merge_pdf() and write_pdf()
     def merge_pdf(self, pdf_list: List[BytesIO], title: str):
         """Merges all PDFs in pdf_list into one PDF file."""
 
@@ -102,13 +104,13 @@ class Application(object):
 
         print("Start Merging '" + title + "'")
         for pdf in pdf_list:
-            self.book.append(pdf)
+            self.merger.append(pdf)
         print("Merge Complete.\n")
 
     def write_pdf(self, filename: str):
         """Save merged PDF."""
 
-        if len(self.book.pages) > 0:
+        if len(self.merger.pages) > 0:
             filename = safe_filename(filename)
 
             if not path.isdir(self.output_dir) and self.force_dir:
@@ -116,10 +118,11 @@ class Application(object):
                 mkdir(self.output_dir)
 
             print("Saving '" + filename + "' to '" + self.output_dir + "'")
-            self.book.write(path.join(self.output_dir, filename))
+            self.merger.write(path.join(self.output_dir, filename))
             print("Done.\n")
+            self.merger = PdfFileMerger()
         else:
-            sys.exit("No book to save.")
+            sys.exit("No merger to save.")
 
     @staticmethod
     def authors_to_string(authors: List[str]) -> str:
@@ -249,6 +252,7 @@ class ApplicationArgParser(ArgumentParser):
         return directory
 
 
+# TODO make this an Application static method
 def safe_filename(name: str):
     """Remove most non-alnum chars from string and add '.pdf'"""
     return "".join(c for c in name if c.isalnum() or c in "- ._").strip() + ".pdf"
@@ -261,13 +265,13 @@ def get_console_input(get_output: bool = True) -> ApplicationArgs or List[str]:
     multiple_urls = "y"
     urls = []
     while multiple_urls == "y":
-        uri_prompt = "Enter URI for 'hanser-elibrary.com' book: "
+        uri_prompt = "Enter URI for 'hanser-elibrary.com' merger: "
         while not (url := input(uri_prompt)).startswith(Application.HANSER_URL):
             # original_prompt = uri_prompt
             uri_prompt = "Please enter a valid URI: "
 
         urls.append(url)
-        multiple_urls = input("Add another book ? (y) ").lower()
+        multiple_urls = input("Add another merger ? (y) ").lower()
 
     # Get output directory
     if get_output:
@@ -292,7 +296,7 @@ def main():
     """Main entry point."""
 
     urls, output, force = ApplicationArgParser(
-        description="Download book as pdf from hanser-elibrary.com"
+        description="Download merger as pdf from hanser-elibrary.com"
     ).validate_application_args()
 
     if not urls:
@@ -301,8 +305,8 @@ def main():
         else:
             urls = get_console_input(get_output=False)
 
+    app = Application(output, force)
     for book in urls:
-        app = Application(output, force)
         app.hanser_download(book)
 
 

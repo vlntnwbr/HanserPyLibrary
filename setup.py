@@ -24,7 +24,7 @@ if __name__ == '__main__':
 
     setup(
         name="hanser-py-library",
-        description="Download & merge each PDF of a book from Hanser Library",
+        description="Download & merge each PDF of a merger from Hanser Library",
         long_description=read_local(README),
         version=VERSION,
         packages=find_packages(),
