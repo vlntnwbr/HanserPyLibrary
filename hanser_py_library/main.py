@@ -27,7 +27,7 @@ class Application(object):
 
     HANSER_URL = "https://www.hanser-elibrary.com"
 
-    def __init__(self, output_dir: str, force_dir: bool = False):
+    def __init__(self, output_dir: str, force_dir: bool = False) -> None:
         self.pdf_list = []  # Contains downloaded PDFs
         self.merger = PdfFileMerger()  # Merged Book
 
@@ -40,7 +40,8 @@ class Application(object):
             self.output_dir = output_dir.strip()
             self.force_dir = force_dir
 
-    def hanser_download(self, url: str):
+    # TODO add Hanser URL validation with urllib
+    def hanser_download(self, url: str) -> None:
         """Get title, authors and chapters and check authorization."""
 
         response = get(url.strip())
@@ -96,7 +97,7 @@ class Application(object):
         self.write_pdf(title)
 
     # TODO Merge methods merge_pdf() and write_pdf()
-    def merge_pdf(self, pdf_list: List[BytesIO], title: str):
+    def merge_pdf(self, pdf_list: List[BytesIO], title: str) -> None:
         """Merges all PDFs in pdf_list into one PDF file."""
 
         if not pdf_list:
@@ -107,7 +108,7 @@ class Application(object):
             self.merger.append(pdf)
         print("Merge Complete.\n")
 
-    def write_pdf(self, filename: str):
+    def write_pdf(self, filename: str) -> None:
         """Save merged PDF."""
 
         if len(self.merger.pages) > 0:
@@ -149,7 +150,8 @@ class ApplicationArgParser(ArgumentParser):
 
     ParserArgFlags = namedtuple("ParserArgFlags", ["short", "long"])
 
-    def __init__(self, **parser_args):
+    # TODO Move description string to __init__
+    def __init__(self, **parser_args) -> None:
         super(ApplicationArgParser, self).__init__(
             prog=parser_args.get("prog"),
             usage=parser_args.get("usage"),
@@ -172,7 +174,7 @@ class ApplicationArgParser(ArgumentParser):
         self.add_application_args()
         self.application_args = self.parse_args()
 
-    def add_application_args(self):
+    def add_application_args(self) -> None:
         """Add application specific arguments to parser."""
 
         self.add_argument(
@@ -253,7 +255,7 @@ class ApplicationArgParser(ArgumentParser):
 
 
 # TODO make this an Application static method
-def safe_filename(name: str):
+def safe_filename(name: str) -> str:
     """Remove most non-alnum chars from string and add '.pdf'"""
     return "".join(c for c in name if c.isalnum() or c in "- ._").strip() + ".pdf"
 
@@ -292,9 +294,10 @@ def get_console_input(get_output: bool = True) -> ApplicationArgs or List[str]:
     return urls
 
 
-def main():
+def main() -> None:
     """Main entry point."""
 
+    # TODO Add Usage Message to parser
     urls, output, force = ApplicationArgParser(
         description="Download book as pdf from hanser-elibrary.com"
     ).validate_application_args()

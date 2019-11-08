@@ -1,10 +1,11 @@
 # Directories
-dist/
-venv/
-.idea/
-logo/
-experiments/
-__pychache__/
+/dist/
+/venv/
+/.venv/
+/.idea/
+/logo/
+/experiments/
+/__pychache__/
 *.egg-info/
 
 # Files
