@@ -163,7 +163,6 @@ class ApplicationArgParser(ArgumentParser):
         "isbn/9783446450523 -fo path/to/nonexistent_dir"
     ]
 
-    # TODO Move description string to __init__
     def __init__(self, **parser_args) -> None:
 
         super(ApplicationArgParser, self).__init__(
@@ -305,7 +304,6 @@ def get_console_input(get_output: bool = True) -> ApplicationArgs or List[str]:
 def main() -> None:
     """Main entry point."""
 
-    # TODO Add Usage Message to parser
     urls, output, force = ApplicationArgParser().validate_application_args()
 
     if not urls:
