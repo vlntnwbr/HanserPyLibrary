@@ -170,7 +170,7 @@ class ApplicationArgParser(ArgumentParser):
             prog=parser_args.get("prog"),
             usage="hanser_py_library.main.py [OPTIONS]",
             description="Download book as pdf from hanser-elibrary.com",
-            epilog="\n".join(self.USAGES),
+            epilog=f"EXAMPLES:\n" + "\n".join(self.USAGES),
             parents=parser_args.get("parents", []),
             formatter_class=RawTextHelpFormatter,
             prefix_chars=parser_args.get("prefix_chars", "-"),
