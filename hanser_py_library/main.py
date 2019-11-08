@@ -6,7 +6,7 @@ merges them into a single PDF File.
 :license: GNU General Public License Version 3, see LICENSE
 """
 
-from argparse import ArgumentParser, ArgumentTypeError, HelpFormatter
+from argparse import ArgumentParser, ArgumentTypeError, RawTextHelpFormatter
 from collections import namedtuple
 from io import BytesIO
 from os import path, mkdir
@@ -112,7 +112,7 @@ class Application(object):
         """Save merged PDF."""
 
         if len(self.merger.pages) > 0:
-            filename = safe_filename(filename)
+            filename = self.safe_filename(filename)
 
             if not path.isdir(self.output_dir) and self.force_dir:
                 print("Creating '" + self.output_dir + "'")
@@ -124,6 +124,11 @@ class Application(object):
             self.merger = PdfFileMerger()
         else:
             sys.exit("No book to save.")
+
+    @staticmethod
+    def safe_filename(name: str) -> str:
+        """Remove most non-alnum chars from string and add '.pdf'"""
+        return "".join(c for c in name if c.isalnum() or c in "- ._").strip() + ".pdf"
 
     @staticmethod
     def authors_to_string(authors: List[str]) -> str:
@@ -149,16 +154,25 @@ class ApplicationArgParser(ArgumentParser):
     """ArgumentParser that validates input."""
 
     ParserArgFlags = namedtuple("ParserArgFlags", ["short", "long"])
+    USAGES = [
+        "hanser_py_library.main.py -u https://www.hanser-elibrary.com/"
+        "isbn/9783446450523",
+        "hanser_py_library.main.py -u https://www.hanser-elibrary.com/"
+        "isbn/9783446450523 -o path/to/existing_dir",
+        "hanser_py_library.main.py -u https://www.hanser-elibrary.com/"
+        "isbn/9783446450523 -fo path/to/nonexistent_dir"
+    ]
 
     # TODO Move description string to __init__
     def __init__(self, **parser_args) -> None:
+
         super(ApplicationArgParser, self).__init__(
             prog=parser_args.get("prog"),
-            usage=parser_args.get("usage"),
-            description=parser_args.get("description"),
-            epilog=parser_args.get("epilog"),
+            usage="hanser_py_library.main.py [OPTIONS]",
+            description="Download book as pdf from hanser-elibrary.com",
+            epilog="\n".join(self.USAGES),
             parents=parser_args.get("parents", []),
-            formatter_class=parser_args.get("formatter_class", HelpFormatter),
+            formatter_class=RawTextHelpFormatter,
             prefix_chars=parser_args.get("prefix_chars", "-"),
             fromfile_prefix_chars=parser_args.get("fromfile_prefix_chars"),
             argument_default=parser_args.get("argument_default", None),
@@ -254,12 +268,6 @@ class ApplicationArgParser(ArgumentParser):
         return directory
 
 
-# TODO make this an Application static method
-def safe_filename(name: str) -> str:
-    """Remove most non-alnum chars from string and add '.pdf'"""
-    return "".join(c for c in name if c.isalnum() or c in "- ._").strip() + ".pdf"
-
-
 def get_console_input(get_output: bool = True) -> ApplicationArgs or List[str]:
     """Get at least one URL and an optional output_dir if needed."""
 
@@ -298,9 +306,7 @@ def main() -> None:
     """Main entry point."""
 
     # TODO Add Usage Message to parser
-    urls, output, force = ApplicationArgParser(
-        description="Download book as pdf from hanser-elibrary.com"
-    ).validate_application_args()
+    urls, output, force = ApplicationArgParser().validate_application_args()
 
     if not urls:
         if not output:
