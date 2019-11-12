@@ -13,6 +13,27 @@ you can provide a custom output directory. The default directory will always
 be created if it doesn't exist, while forcibly creating a custom directory is
 optional. You cannot yet provide a custom output filename.
 
-Planned updates:
+## Usage
+`py -m hanser_py_library.main [OPTIONS]`
+
+* *If no OPTIONS are or an URL is missing, there will be input prompts to add at least one valid URL*
+* *If two different paths are supplied for -o and -fo the program will exit.*
+
+### Options
+| **Short** | **Long** | **Description** |
+| :-: | :-: | :-- |
+| -h | --help | Show help message and exit program. |
+| -u | --url | List of URLs pointing towards book to download. |
+| -o | --out | Output directory that already exists. If it doesnt, the program exits. |
+| -fo | --force | Output directory that will be created if it doesn't exist. If path points to a file, the program exits. |
+
+### Examples
+`py -m hanser_py_library.main -u https://www.hanser-elibrary.com/isbn/978344645052`
+
+`py -m hanser_py_library.main -u https://www.hanser-elibrary.com/isbn/9783446450523 -o path/to/existing_dir`
+
+`py -m hanser_py_library.main -u https://www.hanser-elibrary.com/isbn/9783446450523 -fo path/to/nonexistent_dir`
+
+## Planned updates:
 1. Allow custom output filename
 2. Fix links within merged PDF. Maybe.

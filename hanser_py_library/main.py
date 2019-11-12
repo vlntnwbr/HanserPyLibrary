@@ -21,7 +21,6 @@ Chapter = namedtuple("Chapter", ["title", "href"])
 ApplicationArgs = Tuple[List[str], str, bool]
 
 
-# TODO Update README.md
 class Application(object):
     """Application class."""
 
@@ -155,11 +154,13 @@ class ApplicationArgParser(ArgumentParser):
 
     ParserArgFlags = namedtuple("ParserArgFlags", ["short", "long"])
     USAGES = [
-        "hanser_py_library.main.py -u https://www.hanser-elibrary.com/"
+        "py -m hanser_py_library.main -u https://www.hanser-elibrary.com/"
         "isbn/9783446450523",
-        "hanser_py_library.main.py -u https://www.hanser-elibrary.com/"
+
+        "py -m hanser_py_library.main -u https://www.hanser-elibrary.com/"
         "isbn/9783446450523 -o path/to/existing_dir",
-        "hanser_py_library.main.py -u https://www.hanser-elibrary.com/"
+
+        "py -m hanser_py_library.main -u https://www.hanser-elibrary.com/"
         "isbn/9783446450523 -fo path/to/nonexistent_dir"
     ]
 
