@@ -3,7 +3,7 @@
 from os import path
 from setuptools import find_packages, setup
 
-VERSION = "0.0.3"
+VERSION = "0.0.4"
 README = "README.md"
 REQUIREMENTS = "requirements.txt"
 HEREDIR = path.abspath(path.dirname(__file__))

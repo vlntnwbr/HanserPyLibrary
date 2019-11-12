@@ -27,8 +27,6 @@ class Application(object):
     HANSER_URL = "https://www.hanser-elibrary.com"
 
     def __init__(self, output_dir: str, force_dir: bool = False) -> None:
-        self.pdf_list = []  # Contains downloaded PDFs
-        self.merger = PdfFileMerger()  # Merged Book
 
         if not output_dir:
             self.force_dir = True
@@ -92,37 +90,31 @@ class Application(object):
                 sys.exit(f"'{url}' sent Response Code: {code}")
 
         print("Download Successful.\n")
-        self.merge_pdf(pdf_list, title)
-        self.write_pdf(title)
+        self.merge_and_write_pdf(pdf_list, title)
 
-    # TODO Merge methods merge_pdf() and write_pdf()
-    def merge_pdf(self, pdf_list: List[BytesIO], title: str) -> None:
-        """Merges all PDFs in pdf_list into one PDF file."""
+    def merge_and_write_pdf(self, pdf_list: List[BytesIO], title: str) -> None:
+        """Merges all PDFs in pdf_list into one file and saves it"""
 
         if not pdf_list:
             sys.exit("No PDFs to merge.")
 
         print("Start Merging '" + title + "'")
+        merger = PdfFileMerger()
         for pdf in pdf_list:
-            self.merger.append(pdf)
+            merger.append(pdf)
         print("Merge Complete.\n")
 
-    def write_pdf(self, filename: str) -> None:
-        """Save merged PDF."""
-
-        if len(self.merger.pages) > 0:
-            filename = self.safe_filename(filename)
-
-            if not path.isdir(self.output_dir) and self.force_dir:
-                print("Creating '" + self.output_dir + "'")
-                mkdir(self.output_dir)
-
-            print("Saving '" + filename + "' to '" + self.output_dir + "'")
-            self.merger.write(path.join(self.output_dir, filename))
-            print("Done.\n")
-            self.merger = PdfFileMerger()
-        else:
+        if len(merger.pages) <= 0:
             sys.exit("No book to save.")
+
+        if not path.isdir(self.output_dir) and self.force_dir:
+            print("Creating '" + self.output_dir + "'")
+            mkdir(self.output_dir)
+
+        filename = self.safe_filename(title)
+        print("Saving '" + filename + "' to '" + self.output_dir + "'")
+        merger.write(path.join(self.output_dir, filename))
+        print("Done.\n")
 
     @staticmethod
     def safe_filename(name: str) -> str:
