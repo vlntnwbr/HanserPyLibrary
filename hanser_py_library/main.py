@@ -12,6 +12,7 @@ from io import BytesIO
 from os import path, mkdir
 import sys
 from typing import List, Tuple
+from urllib.parse import urlparse, urlunparse
 
 from bs4 import BeautifulSoup
 from PyPDF2 import PdfFileMerger
@@ -19,6 +20,7 @@ from requests import get
 
 Chapter = namedtuple("Chapter", ["title", "href"])
 ApplicationArgs = Tuple[List[str], str, bool]
+HanserURLCheck = Tuple[bool, str]
 
 
 class Application(object):
@@ -37,11 +39,10 @@ class Application(object):
             self.output_dir = output_dir.strip()
             self.force_dir = force_dir
 
-    # TODO add Hanser URL validation with urllib
     def hanser_download(self, url: str) -> None:
         """Get title, authors and chapters and check authorization."""
 
-        response = get(url.strip())
+        response = get(url)
         book = BeautifulSoup(response.content, "html.parser")
 
         if response.status_code == 500:
@@ -121,7 +122,7 @@ class Application(object):
         """Remove most non-alnum chars from string and add '.pdf'"""
         return "".join(c for c in name if c.isalnum() or c in "- ._").strip() + ".pdf"
 
-    @staticmethod
+    @staticmethod  # TODO: review this
     def authors_to_string(authors: List[str]) -> str:
         """Return joined string of author names."""
 
@@ -231,14 +232,17 @@ class ApplicationArgParser(ArgumentParser):
     @staticmethod
     def application_url(url: str) -> str:
         """Check if URL is valid Application url."""
-        if url and not url.startswith(Application.HANSER_URL):
-            msg = f"'{url}' doesn't start with '{Application.HANSER_URL}'"
-            raise ArgumentTypeError(msg)
+
+        if url:
+            if not (url_check := is_hanser_url(url))[0]:
+                raise ArgumentTypeError(url_check[1])
+            return url_check[1]
         return url
 
     @staticmethod
     def existing_dir(directory: str) -> str:
         """Check if a path exists and is a directory"""
+
         if directory:
             msg = f"Path '{directory}' "
             if not path.exists(directory):
@@ -254,10 +258,63 @@ class ApplicationArgParser(ArgumentParser):
     @staticmethod
     def valid_dir_path(directory: str) -> str:
         """Raise error if path leads to file"""
+
         if path.isfile(directory):
             msg = f"'{directory}' is a file not a directory"
             raise ArgumentTypeError(msg)
         return directory
+
+
+def is_isbn13(isbn: str) -> bool:
+    """True if :isbn: provides valid checksum for ISBN-13"""
+
+    if not isbn.isnumeric() or len(isbn) != 13:
+        return False
+
+    checksum = (
+        10 - sum(
+                [int(isbn[n]) * (3 ** (n % 2)) for n in range(len(isbn))]
+            ) % 10
+        ) % 10
+
+    return checksum == 0
+
+
+def is_hanser_url(url: str) -> HanserURLCheck:
+    """True if :url: matches is a valid url for hanser-elibrary.com"""
+
+    hanser_url = urlparse(Application.HANSER_URL)
+    parsed_url = urlparse(url.strip())
+
+    # Replace missing scheme and fix netloc & path
+    if not parsed_url.scheme == hanser_url.scheme:
+        if not parsed_url.scheme:
+
+            path_elements = parsed_url.path.split("/", 1)
+            if len(path_elements) > 1:
+                netloc, fixed_path = path_elements[0], path_elements[1]
+            else:
+                netloc, fixed_path = path_elements[0], ""
+
+            parsed_url = parsed_url._replace(netloc=netloc, path=fixed_path)
+        parsed_url = parsed_url._replace(scheme="https")
+
+    # Check if URL is valid
+    err = ""
+    url_path = [elem for elem in parsed_url.path.split("/") if elem]
+    if parsed_url.netloc not in (hanser_url.netloc, hanser_url.netloc[4:]):
+        err = f"Invalid Location: {parsed_url.netloc}"
+
+    elif not url_path[0] == "isbn":
+        err = f"URL path must start with 'isbn' not '{url_path[0]}'"
+
+    elif not is_isbn13(url_path[1]):
+        err = f"{url_path[1]} returns invalid checksum for ISBN-13"
+
+    if err:
+        return False, err
+
+    return True, urlunparse(parsed_url)
 
 
 def get_console_input(get_output: bool = True) -> ApplicationArgs or List[str]:
@@ -267,13 +324,13 @@ def get_console_input(get_output: bool = True) -> ApplicationArgs or List[str]:
     multiple_urls = "y"
     urls = []
     while multiple_urls == "y":
-        uri_prompt = "Enter URI for 'hanser-elibrary.com' book: "
-        while not (url := input(uri_prompt)).startswith(Application.HANSER_URL):
-            # original_prompt = uri_prompt
-            uri_prompt = "Please enter a valid URI: "
+        uri_prompt = "Enter URL for 'hanser-elibrary.com' book: "
+        while not (url_check := is_hanser_url(input(uri_prompt)))[0]:
+            uri_prompt = url_check[1] + "\nPlease enter a valid URL: "
 
-        urls.append(url)
-        multiple_urls = input("Add another book ? (y) ").lower()
+        urls.append(url_check[1])
+        multiple_urls = input(f"Added '{url_check[1]}'\n"
+                              f"Add another book ? (y) ").lower()
 
     # Get output directory
     if get_output:
