@@ -18,10 +18,13 @@ from bs4 import BeautifulSoup
 from PyPDF2 import PdfFileMerger
 from requests import get
 
+PROG_NAME = "hanser-py-library"
 Chapter = namedtuple("Chapter", ["title", "href"])
 ApplicationArgs = Tuple[List[str], str, bool]
 HanserURLCheck = Tuple[bool, str]
 
+
+# TODO: Don't exit if unauthorized, raise Exception or instead
 
 class Application(object):
     """Application class."""
@@ -147,31 +150,23 @@ class ApplicationArgParser(ArgumentParser):
 
     ParserArgFlags = namedtuple("ParserArgFlags", ["short", "long"])
     USAGES = [
-        "py -m hanser_py_library.main -u https://www.hanser-elibrary.com/"
-        "isbn/9783446450523",
+        f"{PROG_NAME} -u https://www.hanser-elibrary.com/isbn/9783446450523",
 
-        "py -m hanser_py_library.main -u https://www.hanser-elibrary.com/"
-        "isbn/9783446450523 -o path/to/existing_dir",
+        f"{PROG_NAME} -u https://www.hanser-elibrary.com/isbn/9783446450523"
+        f" -o path/to/existing_dir",
 
-        "py -m hanser_py_library.main -u https://www.hanser-elibrary.com/"
-        "isbn/9783446450523 -fo path/to/nonexistent_dir"
+        f"{PROG_NAME} -u https://www.hanser-elibrary.com/isbn/9783446450523"
+        f" -fo path/to/nonexistent_dir"
     ]
 
-    def __init__(self, **parser_args) -> None:
+    def __init__(self) -> None:
 
         super(ApplicationArgParser, self).__init__(
-            prog=parser_args.get("prog"),
-            usage="hanser_py_library.main.py [OPTIONS]",
+            prog=PROG_NAME,
+            usage=f"{PROG_NAME} [OPTIONS]",
             description="Download book as pdf from hanser-elibrary.com",
             epilog=f"EXAMPLES:\n" + "\n".join(self.USAGES),
-            parents=parser_args.get("parents", []),
             formatter_class=RawTextHelpFormatter,
-            prefix_chars=parser_args.get("prefix_chars", "-"),
-            fromfile_prefix_chars=parser_args.get("fromfile_prefix_chars"),
-            argument_default=parser_args.get("argument_default", None),
-            conflict_handler=parser_args.get("conflict_handler", "error"),
-            add_help=parser_args.get("add_help", True),
-            allow_abbrev=parser_args.get("allow_abbrev", True)
         )
 
         self.url = self.ParserArgFlags("-u", "--url")
@@ -211,7 +206,7 @@ class ApplicationArgParser(ArgumentParser):
             default=False
         )
 
-    def validate_application_args(self) -> ApplicationArgs:
+    def application_args_is_valid(self) -> ApplicationArgs:
         """Validate arguments from argparse."""
         parsed_out = self.application_args.out
         parsed_force = self.application_args.force
@@ -354,7 +349,7 @@ def get_console_input(get_output: bool = True) -> ApplicationArgs or List[str]:
 def main() -> None:
     """Main entry point."""
 
-    urls, output, force = ApplicationArgParser().validate_application_args()
+    urls, output, force = ApplicationArgParser().application_args_is_valid()
 
     if not urls:
         if not output:

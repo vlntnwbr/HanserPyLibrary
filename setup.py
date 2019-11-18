@@ -3,7 +3,7 @@
 import subprocess
 from os import path
 from setuptools import find_packages, setup
-from typing import List, Optional
+from typing import List
 
 VERSION = "0.0.4"
 REQUIREMENTS_TXT = "requirements.txt"
@@ -73,8 +73,8 @@ if __name__ == '__main__':
         url="https://github.com/vlntnwbr/HanserPyLibrary",
         maintainer="Valentin Weber",
         maintainer_email="dev@example.com",
-        entrypoints={
-            'console-scripts': [
+        entry_points={
+            'console_scripts': [
                 "hanser-py-library = hanser_py_library.main:main"
             ]
         }
