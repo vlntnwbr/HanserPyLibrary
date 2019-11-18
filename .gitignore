@@ -9,5 +9,6 @@
 *.egg-info/
 
 # Files
+requirements.txt
 **.pdf
 **_build.cmd

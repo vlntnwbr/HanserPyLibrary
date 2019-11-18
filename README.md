@@ -16,8 +16,9 @@ optional. You cannot yet provide a custom output filename.
 ## Usage
 `py -m hanser_py_library.main [OPTIONS]`
 
-* *If no OPTIONS are or an URL is missing, there will be input prompts to add at least one valid URL*
-* *If two different paths are supplied for -o and -fo the program will exit.*
+*  *If no OPTIONS are provided or an URL is missing, there will be input 
+    prompts to add at least one valid URL*
+*  *If two different paths are supplied for -o and -fo the program will exit.*
 
 ### Options
 | **Short** | **Long** | **Description** |
@@ -34,6 +35,8 @@ optional. You cannot yet provide a custom output filename.
 
 `py -m hanser_py_library.main -u https://www.hanser-elibrary.com/isbn/9783446450523 -fo path/to/nonexistent_dir`
 
-## Planned updates:
-1. Allow custom output filename
-2. Fix links within merged PDF. Maybe.
+## Planned updates
+1.  Improve Error handling
+2.  Implement Caching of already downloaded chapters
+3.  Allow custom output filename
+4.  Fix links within merged PDF. Maybe.
