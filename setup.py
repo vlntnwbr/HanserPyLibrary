@@ -25,7 +25,7 @@ def execute_command(args: List[str]) -> List[str]:
     return [line for line in process.stdout.decode('utf-8').split("\r\n")]
 
 
-def create_requirements_txt(output: bool = False) -> None:
+def create_requirements_txt() -> None:
     """Create file 'requirements.txt' from Pipfile.lock"""
 
     try:

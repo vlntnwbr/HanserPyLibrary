@@ -24,7 +24,11 @@ ApplicationArgs = Tuple[List[str], str, bool]
 HanserURLCheck = Tuple[bool, str]
 
 
-# TODO: Don't exit if unauthorized, raise Exception or instead
+# TODO: Don't exit if error, raise Exception instead
+# TODO: Allow output dir starting with "~"
+# TODO: Remove console input -> URLs become COMMAND not OPTION
+# TODO: Only invoke safe_filename() if filename is invalid
+# TODO: Default output dir becomes working directory
 
 class Application(object):
     """Application class."""
@@ -183,7 +187,7 @@ class ApplicationArgParser(ArgumentParser):
             self.url.short, self.url.long,
             metavar="URL",
             help=f"Book URL starting with '{Application.HANSER_URL}'",
-            type=self.application_url,
+            type=self.is_application_url,
             default="",
             nargs="*"
         )
@@ -193,7 +197,7 @@ class ApplicationArgParser(ArgumentParser):
             self.out.short, self.out.long,
             metavar="OUT",
             help=out_help + "that already exists",
-            type=self.existing_dir,
+            type=self.is_existing_dir,
             default=""
         )
 
@@ -202,11 +206,11 @@ class ApplicationArgParser(ArgumentParser):
             metavar="FORCE",
             dest="force",
             help=out_help + "that is created if it doesn't exist",
-            type=self.valid_dir_path,
+            type=self.is_valid_dir_path,
             default=False
         )
 
-    def application_args_is_valid(self) -> ApplicationArgs:
+    def parse_application_args(self) -> ApplicationArgs:
         """Validate arguments from argparse."""
         parsed_out = self.application_args.out
         parsed_force = self.application_args.force
@@ -225,7 +229,7 @@ class ApplicationArgParser(ArgumentParser):
         return self.application_args.url, out, force
 
     @staticmethod
-    def application_url(url: str) -> str:
+    def is_application_url(url: str) -> str:
         """Check if URL is valid Application url."""
 
         if url:
@@ -235,7 +239,7 @@ class ApplicationArgParser(ArgumentParser):
         return url
 
     @staticmethod
-    def existing_dir(directory: str) -> str:
+    def is_existing_dir(directory: str) -> str:
         """Check if a path exists and is a directory"""
 
         if directory:
@@ -251,7 +255,7 @@ class ApplicationArgParser(ArgumentParser):
         return directory
 
     @staticmethod
-    def valid_dir_path(directory: str) -> str:
+    def is_valid_dir_path(directory: str) -> str:
         """Raise error if path leads to file"""
 
         if path.isfile(directory):
@@ -349,7 +353,7 @@ def get_console_input(get_output: bool = True) -> ApplicationArgs or List[str]:
 def main() -> None:
     """Main entry point."""
 
-    urls, output, force = ApplicationArgParser().application_args_is_valid()
+    urls, output, force = ApplicationArgParser().parse_application_args()
 
     if not urls:
         if not output:
