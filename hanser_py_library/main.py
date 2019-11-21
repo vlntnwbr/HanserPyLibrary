@@ -29,6 +29,7 @@ HanserURLCheck = Tuple[bool, str]
 # TODO: Remove console input -> URLs become COMMAND not OPTION
 # TODO: Only invoke safe_filename() if filename is invalid
 # TODO: Default output dir becomes working directory
+# TODO: Build Chapter URL with urljoin()
 
 class Application(object):
     """Application class."""
