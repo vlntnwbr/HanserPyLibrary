@@ -1,8 +1,9 @@
 # Hanser PyLibrary
 
-This tool downloads each chapter of a book from *https://www.hanser-
-elibrary.com* and merges them into a single PDF File called 
-*{Booktitle}.pdf*. Unfortunately, as of right now it seems like links 
+This tool downloads each chapter of a book from *https://www.hanser-elibrary.com* 
+and merges them into a single PDF File called *{Booktitle}.pdf*. 
+
+Unfortunately, as of right now it seems like links 
 within the merged book (e.g. chapter references) do not work.
 
 The tool will check whether you are authorized to access the book before
