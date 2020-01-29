@@ -2,7 +2,7 @@ name: HanserPyLibrary
 on: [push]
 
 jobs:
-  build:
+  codestyle:
 
     runs-on: ubuntu-latest
 
