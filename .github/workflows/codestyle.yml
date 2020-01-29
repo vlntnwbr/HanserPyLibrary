@@ -16,12 +16,13 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         python -m pip install pipenv
-        python -m pipenv lock -r -d > requirements.txt
+        python -m pipenv lock -r > requirements.txt
         head -25 requirements.txt
 
     - name: Install dependencies
       run: |
         python -m pip install -r requirements.txt
+        python -m pip install pylint
     - name: PyLint
       run: |
         python -m pylint --rcfile .pylintrc -f colorized hanser_py_library
