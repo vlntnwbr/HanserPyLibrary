@@ -9,7 +9,7 @@ merges them into a single PDF File.
 from argparse import ArgumentParser, ArgumentTypeError, RawTextHelpFormatter
 from collections import namedtuple
 from io import BytesIO
-from os import path, mkdir
+import os
 import sys
 from typing import List, Tuple
 from urllib.parse import urlparse, urlunparse
@@ -18,20 +18,19 @@ from bs4 import BeautifulSoup
 from PyPDF2 import PdfFileMerger
 from requests import get
 
-PROG_NAME = "hanser-py-library"
+from . import PROG_NAME
+
 Chapter = namedtuple("Chapter", ["title", "href"])
 ApplicationArgs = Tuple[List[str], str, bool]
 HanserURLCheck = Tuple[bool, str]
 
 
 # TODO: Don't exit if error, raise Exception instead
-# TODO: Allow output dir starting with "~"
-# TODO: Remove console input -> URLs become COMMAND not OPTION
-# TODO: Only invoke safe_filename() if filename is invalid
-# TODO: Default output dir becomes working directory
+# TODO: If filename raises os error safe file as ISBN.pdf
 # TODO: Build Chapter URL with urljoin()
+# TODO: URL: https://www.hanser-elibrary.com/doi/book/10.3139/9783446440685
 
-class Application(object):
+class Application:
     """Application class."""
 
     HANSER_URL = "https://www.hanser-elibrary.com"
@@ -40,9 +39,7 @@ class Application(object):
 
         if not output_dir:
             self.force_dir = True
-            self.output_dir = path.join(
-                path.expanduser("~"), "Documents", "HanserPyLibrary"
-            )
+            self.output_dir = os.getcwd()
         else:
             self.output_dir = output_dir.strip()
             self.force_dir = force_dir
@@ -116,16 +113,16 @@ class Application(object):
         if len(merger.pages) <= 0:
             sys.exit("No book to save.")
 
-        if not path.isdir(self.output_dir) and self.force_dir:
+        if not os.path.isdir(self.output_dir) and self.force_dir:
             print("Creating '" + self.output_dir + "'")
-            mkdir(self.output_dir)
+            os.makedirs(self.output_dir)
 
         filename = self.safe_filename(title)
         print("Saving '" + filename + "' to '" + self.output_dir + "'")
-        merger.write(path.join(self.output_dir, filename))
+        merger.write(os.path.join(self.output_dir, filename))
         print("Done.\n")
 
-    @staticmethod
+    @staticmethod  # TODO: remove & replace with ISBN.pdf
     def safe_filename(name: str) -> str:
         """Remove most non-alnum chars from string and add '.pdf'"""
         return "".join(c for c in name if c.isalnum() or c in "- ._").strip() + ".pdf"
@@ -150,119 +147,88 @@ class Application(object):
         return string
 
 
-class ApplicationArgParser(ArgumentParser):
+class HanserParser(ArgumentParser):
     """ArgumentParser that validates input."""
 
     ParserArgFlags = namedtuple("ParserArgFlags", ["short", "long"])
-    USAGES = [
-        f"{PROG_NAME} -u https://www.hanser-elibrary.com/isbn/9783446450523",
-
-        f"{PROG_NAME} -u https://www.hanser-elibrary.com/isbn/9783446450523"
-        f" -o path/to/existing_dir",
-
-        f"{PROG_NAME} -u https://www.hanser-elibrary.com/isbn/9783446450523"
-        f" -fo path/to/nonexistent_dir"
-    ]
 
     def __init__(self) -> None:
 
-        super(ApplicationArgParser, self).__init__(
+        example_url = "https://www.hanser-elibrary.com/isbn/9783446450523"
+        usage_examples = "EXAMPLES:\n" + "\n".join((
+            f"{PROG_NAME} -u {example_url}",
+            f"{PROG_NAME} -u {example_url} -o /existing_dir",
+            f"{PROG_NAME} -u {example_url} -f -o /dir/to/create"
+        ))
+
+        super(HanserParser, self).__init__(
             prog=PROG_NAME,
-            usage=f"{PROG_NAME} [OPTIONS]",
             description="Download book as pdf from hanser-elibrary.com",
-            epilog=f"EXAMPLES:\n" + "\n".join(self.USAGES),
+            epilog=usage_examples,
             formatter_class=RawTextHelpFormatter,
         )
 
-        self.url = self.ParserArgFlags("-u", "--url")
         self.out = self.ParserArgFlags("-o", "--out")
-        self.force = self.ParserArgFlags("-fo", "--force")
+        self.force = self.ParserArgFlags("-f", "--force")
 
-        self.add_application_args()
-        self.application_args = self.parse_args()
+        self.add_args()
 
-    def add_application_args(self) -> None:
+    def add_args(self) -> None:
         """Add application specific arguments to parser."""
 
         self.add_argument(
-            self.url.short, self.url.long,
+            "url",
             metavar="URL",
-            help=f"Book URL starting with '{Application.HANSER_URL}'",
+            help="URL(s) of book(s) to download",
             type=self.is_application_url,
-            default="",
-            nargs="*"
+            nargs="+"
         )
 
-        out_help = "Path to custom output directory "
         self.add_argument(
             self.out.short, self.out.long,
             metavar="OUT",
-            help=out_help + "that already exists",
-            type=self.is_existing_dir,
+            help="Path to output path. Cannot point to file.",
+            type=self.is_valid_dir_path,
             default=""
         )
 
         self.add_argument(
             self.force.short, self.force.long,
-            metavar="FORCE",
-            dest="force",
-            help=out_help + "that is created if it doesn't exist",
-            type=self.is_valid_dir_path,
-            default=False
+            action="store_true",
+            help="Set this to force creation of path to output dir",
+            dest="force_dir"
         )
 
-    def parse_application_args(self) -> ApplicationArgs:
-        """Validate arguments from argparse."""
-        parsed_out = self.application_args.out
-        parsed_force = self.application_args.force
+    def validate_args(self):
+        """Validate arguments"""
 
-        if parsed_out and parsed_force and (parsed_out != parsed_force):
-            msg = f"arguments {'/'.join(self.out)} & {'/'.join(self.force)} " \
-                  f"have different values"
-            self.error(msg)  # exits with proper argparse.ArgumentError
-        elif parsed_force:
-            out = parsed_force
-            force = True
-        else:
-            out = parsed_out
-            force = False
-        # noinspection PyUnboundLocalVariable
-        return self.application_args.url, out, force
+        parsed = self.parse_args()
+
+        if parsed.out and not os.path.isdir(parsed.out):
+            if not parsed.force_dir:
+                self.error(f"Directory '{parsed.out}' doesn't exist and "
+                           f"{'/'.join(self.force)} was not set")
+
+        return parsed.url, parsed.out, parsed.force_dir
 
     @staticmethod
     def is_application_url(url: str) -> str:
         """Check if URL is valid Application url."""
 
-        if url:
-            if not (url_check := is_hanser_url(url))[0]:
-                raise ArgumentTypeError(url_check[1])
-            return url_check[1]
-        return url
+        if not (url_check := is_hanser_url(url))[0]:
+            raise ArgumentTypeError(url_check[1])
+        return url_check[1]
 
     @staticmethod
-    def is_existing_dir(directory: str) -> str:
-        """Check if a path exists and is a directory"""
-
-        if directory:
-            msg = f"Path '{directory}' "
-            if not path.exists(directory):
-                msg += "doesn't exist"
-            elif path.isfile(directory):
-                msg += "is a file not a directory"
-            elif not path.isdir(directory):
-                msg += "is not a directory"
-            if msg[-1] != " ":
-                raise ArgumentTypeError(msg)
-        return directory
-
-    @staticmethod
-    def is_valid_dir_path(directory: str) -> str:
+    def is_valid_dir_path(path: str) -> str:
         """Raise error if path leads to file"""
 
-        if path.isfile(directory):
-            msg = f"'{directory}' is a file not a directory"
-            raise ArgumentTypeError(msg)
-        return directory
+        if path.startswith("~"):
+            path = os.path.normpath(os.path.expanduser(path))
+
+        if os.path.isfile(path):
+            raise ArgumentTypeError(f"'{path}' points to a file")
+        return path
 
 
 def is_isbn13(isbn: str) -> bool:
@@ -273,7 +239,7 @@ def is_isbn13(isbn: str) -> bool:
 
     checksum = (
         10 - sum(
-                [int(isbn[n]) * (3 ** (n % 2)) for n in range(len(isbn))]
+            [int(isbn[n]) * (3 ** (n % 2)) for n in range(len(isbn))]
             ) % 10
         ) % 10
 
@@ -317,50 +283,10 @@ def is_hanser_url(url: str) -> HanserURLCheck:
     return True, urlunparse(parsed_url)
 
 
-def get_console_input(get_output: bool = True) -> ApplicationArgs or List[str]:
-    """Get at least one URL and an optional output_dir if needed."""
-
-    # Get List of URLs
-    multiple_urls = "y"
-    urls = []
-    while multiple_urls == "y":
-        uri_prompt = "Enter URL for 'hanser-elibrary.com' book: "
-        while not (url_check := is_hanser_url(input(uri_prompt)))[0]:
-            uri_prompt = url_check[1] + "\nPlease enter a valid URL: "
-
-        urls.append(url_check[1])
-        multiple_urls = input(f"Added '{url_check[1]}'\n"
-                              f"Add another book ? (y) ").lower()
-
-    # Get output directory
-    if get_output:
-        force = False
-        dir_prompt = "[OPTIONAL] Enter path to output dir: "
-        while (output_dir := input(dir_prompt)) \
-                and not path.isdir(output_dir) and not force:
-
-            msg = f"Directory '{output_dir}' "
-            force_out = input(msg + "doesn't exist. Create it? (y) ").lower()
-            if force_out == "y":
-                if path.isfile(output_dir):
-                    print(msg + "is a file not a directory")
-                else:
-                    force = True
-                    break
-        return urls, output_dir, force
-    return urls
-
-
 def main() -> None:
     """Main entry point."""
 
-    urls, output, force = ApplicationArgParser().parse_application_args()
-
-    if not urls:
-        if not output:
-            urls, output, force = get_console_input()
-        else:
-            urls = get_console_input(get_output=False)
+    urls, output, force = HanserParser().validate_args()
 
     app = Application(output, force)
     for book in urls:

@@ -2,16 +2,19 @@
 
 import subprocess
 from os import path
-from setuptools import find_packages, setup
 from typing import List
 
-VERSION = "0.0.4"
+from setuptools import find_packages, setup
+
+from hanser_py_library import PROG_NAME
+
+VERSION = "0.0.5"
 REQUIREMENTS_TXT = "requirements.txt"
 HEREDIR = path.abspath(path.dirname(__file__))
 
 
 def open_local(filename: str, mode: str = "r"):
-    """Open file in this directory"""
+    """Open file in this path"""
 
     return open(path.join(HEREDIR, filename), mode)
 
@@ -19,10 +22,13 @@ def open_local(filename: str, mode: str = "r"):
 def execute_command(args: List[str]) -> List[str]:
     """Execute external command and return stdout as list of strings."""
 
-    process = subprocess.run(args, stdout=subprocess.PIPE)
-    if process.returncode:
+    try:
+        process = subprocess.run(args, stdout=subprocess.PIPE, check=True)
+        return [
+            line.strip() for line in process.stdout.decode("utf-8").split("\n")
+        ]
+    except subprocess.CalledProcessError:
         return []
-    return [line for line in process.stdout.decode('utf-8').split("\r\n")]
 
 
 def create_requirements_txt() -> None:
@@ -73,9 +79,6 @@ if __name__ == '__main__':
         url="https://github.com/vlntnwbr/HanserPyLibrary",
         maintainer="Valentin Weber",
         maintainer_email="dev@example.com",
-        entry_points={
-            'console_scripts': [
-                "hanser-py-library = hanser_py_library.main:main"
-            ]
-        }
-    )
+        entry_points={'console_scripts': [
+            PROG_NAME + " = hanser_py_library.main:main"
+        ]})

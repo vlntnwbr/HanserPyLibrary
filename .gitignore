@@ -1,14 +1,10 @@
 # Directories
 /dist/
-/venv/
 /.venv/
 /.idea/
-/logo/
-/experiments/
 /__pychache__/
 *.egg-info/
 
 # Files
 requirements.txt
 **.pdf
-**_build.cmd
