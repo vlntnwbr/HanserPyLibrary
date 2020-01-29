@@ -36,11 +36,14 @@ needs to end with a valid ISBN-13 number.
 | -f | --force | If set the output directory and every directory on the way will be forcibly created. |
 
 ### Examples
-Save the book in the current working directory:
+Save the book in the current working directory
+
 `hanser -u https://www.hanser-elibrary.com/isbn/978344645052`
 
-Save the book in a directory which exists:
+Save the book in a directory which exists
+
 `hanser -u https://www.hanser-elibrary.com/isbn/9783446450523 -o path/to/dir`
 
-Save the book to a directory that may or may not exist:
+Save the book to a directory that may or may not exist
+
 `hanser-py-library -u https://www.hanser-elibrary.com/isbn/9783446450523 -o path/to/dir -f`
