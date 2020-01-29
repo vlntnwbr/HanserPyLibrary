@@ -8,3 +8,4 @@
 # Files
 requirements.txt
 **.pdf
+Pipfile.lock
