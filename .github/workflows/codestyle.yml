@@ -17,7 +17,6 @@ jobs:
         python -m pip install --upgrade pip
         python -m pip install pipenv
         python -m pipenv lock -r > requirements.txt
-        head -25 requirements.txt
 
     - name: Install dependencies
       run: |
@@ -25,4 +24,4 @@ jobs:
         python -m pip install pylint pylint-exit
     - name: PyLint
       run: |
-        pylint --rcfile .pylintrc -f colorized hanser_py_library || pylint-exit -efail $?
+        pylint -f colorized hanser_py_library || pylint-exit -efail -wfail $?

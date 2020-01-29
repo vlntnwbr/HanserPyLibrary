@@ -38,12 +38,12 @@ needs to end with a valid ISBN-13 number.
 ### Examples
 Save the book in the current working directory
 
-`hanser -u https://www.hanser-elibrary.com/isbn/978344645052`
+`hanser https://www.hanser-elibrary.com/isbn/978344645052`
 
 Save the book in a directory which exists
 
-`hanser -u https://www.hanser-elibrary.com/isbn/9783446450523 -o path/to/dir`
+`hanser -o path/to/dir https://www.hanser-elibrary.com/isbn/9783446450523`
 
 Save the book to a directory that may or may not exist
 
-`hanser-py-library -u https://www.hanser-elibrary.com/isbn/9783446450523 -o path/to/dir -f`
+`hanser -o path/to/dir -f https://www.hanser-elibrary.com/isbn/9783446450523`
