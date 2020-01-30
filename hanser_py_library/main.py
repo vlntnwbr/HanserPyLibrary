@@ -10,9 +10,8 @@ from argparse import ArgumentParser, ArgumentTypeError, RawTextHelpFormatter
 from collections import namedtuple
 from io import BytesIO
 import os
-import sys
 from typing import List, Tuple
-from urllib.parse import urlparse, urlunparse
+from urllib.parse import urlparse, urlunparse, urljoin
 
 from bs4 import BeautifulSoup
 from PyPDF2 import PdfFileMerger
@@ -25,10 +24,16 @@ ApplicationArgs = Tuple[List[str], str, bool]
 HanserURLCheck = Tuple[bool, str]
 
 
-# TODO: Don't exit if error, raise Exception instead
-# TODO: If filename raises os error safe file as ISBN.pdf
-# TODO: Build Chapter URL with urljoin()
+# TODO: If filename raises os error save file as ISBN.pdf
 # TODO: URL: https://www.hanser-elibrary.com/doi/book/10.3139/9783446440685
+
+class HanserDownloadError(Exception):
+    """Exception that occurs while the book is downloaded"""
+
+
+class BookMergeError(Exception):
+    """Error that occurs while merging the book"""
+
 
 class Application:
     """Application class."""
@@ -48,39 +53,40 @@ class Application:
         """Get title, authors and chapters and check authorization."""
 
         response = get(url)
-        book = BeautifulSoup(response.content, "html.parser")
+        content = BeautifulSoup(response.content, "html.parser")
 
-        if response.status_code == 500:
-            sys.exit(book.find("p", class_="error").string)
+        if response.status_code in (404, 500):
+            raise HanserDownloadError(content.find("p", class_="error").string)
 
-        title = book.find("div", id="articleToolsHeading").string.strip()
+        title = content.find("div", id="articleToolsHeading").string.strip()
+
+        no_access = content.find("img", {"class": "accessIcon",
+                                         "alt": "no access"})
+
+        if no_access is not None:
+            raise HanserDownloadError(f"Unauthorized to download '{title}'")
+
         authors = self.authors_to_string([
             author.string for author in
-            book.find_all("span", class_="NLM_string-name")
-            ])
+            content.find_all("span", class_="NLM_string-name")
+        ])
 
         chapter_list = []
-        for chapter in book.find_all("table", class_="articleEntry"):
-
-            access = chapter.find("img", class_="accessIcon")["title"]
-            if access == "no access":
-                sys.exit(f"Unauthorized to download '{title}'")
+        for chapter in content.find_all("table", class_="articleEntry"):
 
             chapter_title = chapter.find("span", class_="hlFld-Title").string
             href = chapter.find("a", class_="ref nowrap pdf")["href"]
 
             if not chapter_title:
                 chapter_title = "Chapter " + href.rsplit(".", 1)[1]
-
-            chapter_info = Chapter(chapter_title, href)
-            chapter_list.append(chapter_info)
+            chapter_list.append(Chapter(chapter_title, href))
 
         print(f"Downloading '{title}' by {authors}")
 
         pdf_list = []
         for chapter in chapter_list:
             print("\t" + "Downloading '" + chapter.title + "'...")
-            url = self.HANSER_URL + chapter.href
+            url = urljoin(self.HANSER_URL, chapter.href)
             download = get(url, params={"download": "true"})
             content = download.headers["Content-Type"].split(";", 1)[0]
 
@@ -89,11 +95,12 @@ class Application:
                     pdf_list.append(BytesIO(download.content))
 
                 else:
-                    sys.exit(f"'{url}' sent {content} not 'application/pdf'")
+                    raise HanserDownloadError(
+                        f"'{url}' sent {content} not 'application/pdf'")
 
             else:
                 code = download.status_code
-                sys.exit(f"'{url}' sent Response Code: {code}")
+                raise HanserDownloadError(f"'{url}' Response Code: {code}")
 
         print("Download Successful.\n")
         self.merge_and_write_pdf(pdf_list, title)
@@ -102,30 +109,31 @@ class Application:
         """Merges all PDFs in pdf_list into one file and saves it"""
 
         if not pdf_list:
-            sys.exit("No PDFs to merge.")
+            raise BookMergeError("No PDFs to merge.")
 
-        print("Start Merging '" + title + "'")
+        print(f"Start Merging '{title}'")
         merger = PdfFileMerger()
         for pdf in pdf_list:
             merger.append(pdf)
         print("Merge Complete.\n")
 
         if len(merger.pages) <= 0:
-            sys.exit("No book to save.")
+            raise BookMergeError("No book to save.")
 
         if not os.path.isdir(self.output_dir) and self.force_dir:
-            print("Creating '" + self.output_dir + "'")
+            print(f"Creating '{self.output_dir}'")
             os.makedirs(self.output_dir)
 
         filename = self.safe_filename(title)
-        print("Saving '" + filename + "' to '" + self.output_dir + "'")
+        print(f"Saving '{filename}' to '{self.output_dir}'")
         merger.write(os.path.join(self.output_dir, filename))
         print("Done.\n")
 
     @staticmethod  # TODO: remove & replace with ISBN.pdf
     def safe_filename(name: str) -> str:
         """Remove most non-alnum chars from string and add '.pdf'"""
-        return "".join(c for c in name if c.isalnum() or c in "- ._").strip() + ".pdf"
+        return "".join(c for c in name if c.isalnum() or c in "- ._").strip() \
+               + ".pdf"
 
     @staticmethod  # TODO: review this
     def authors_to_string(authors: List[str]) -> str:
@@ -199,7 +207,7 @@ class HanserParser(ArgumentParser):
             dest="force_dir"
         )
 
-    def validate_args(self):
+    def validate_args(self) -> ApplicationArgs:
         """Validate arguments"""
 
         parsed = self.parse_args()
@@ -290,7 +298,12 @@ def main() -> None:
 
     app = Application(output, force)
     for book in urls:
-        app.hanser_download(book)
+        try:
+            app.hanser_download(book)
+        except HanserDownloadError as exc:
+            print(f"Skipped {book} because: {exc.args[0]}")
+        except BookMergeError as exc:
+            print(f"Skipped because Merge Error: {exc.args[0]}")
 
 
 if __name__ == '__main__':
