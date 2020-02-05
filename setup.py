@@ -1,20 +1,20 @@
-"""Setup script"""
+"""Setup script."""
 
 import subprocess
 from os import path
-from typing import List
+from typing import List, TextIO
 
 from setuptools import find_packages, setup
 
-from hanser_py_library import PROG_NAME
+from hanser_py_library import PROG_NAME, PROG_DESC
 
 VERSION = "0.0.5"
 REQUIREMENTS_TXT = "requirements.txt"
 HEREDIR = path.abspath(path.dirname(__file__))
 
 
-def open_local(filename: str, mode: str = "r"):
-    """Open file in this path"""
+def open_local(filename: str, mode: str = "r") -> TextIO:
+    """Open file in this directory."""
 
     return open(path.join(HEREDIR, filename), mode)
 
@@ -32,7 +32,7 @@ def execute_command(args: List[str]) -> List[str]:
 
 
 def create_requirements_txt() -> None:
-    """Create file 'requirements.txt' from Pipfile.lock"""
+    """Create file 'requirements.txt' from 'Pipfile.lock'."""
 
     try:
         with open_local("Pipfile.lock"):
@@ -55,10 +55,8 @@ def read_requirements() -> List[str]:
     """Read lines of requirements.txt and return them as list"""
 
     with open_local(REQUIREMENTS_TXT) as file:
-        return [
-            line.strip() for line in file.readlines()
-            if line and not line.startswith("#")
-        ]
+        return [line.strip() for line in file.readlines()
+                if line and not line.startswith("#")]
 
 
 if __name__ == '__main__':
@@ -68,7 +66,7 @@ if __name__ == '__main__':
 
     setup(
         name="hanser-py-library",
-        description="Download & merge each PDF of a book from Hanser Library",
+        description=PROG_DESC,
         long_description=README,
         version=VERSION,
         packages=find_packages(),

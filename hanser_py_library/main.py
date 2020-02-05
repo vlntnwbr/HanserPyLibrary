@@ -17,7 +17,7 @@ from bs4 import BeautifulSoup
 from PyPDF2 import PdfFileMerger
 from requests import get
 
-from . import PROG_NAME
+from . import PROG_NAME, PROG_DESC
 
 Chapter = namedtuple("Chapter", ["title", "href"])
 ApplicationArgs = Tuple[List[str], str, bool]
@@ -66,19 +66,25 @@ class Application:
         if no_access is not None:
             raise HanserDownloadError(f"Unauthorized to download '{title}'")
 
-        authors = self.authors_to_string([
-            author.string for author in
-            content.find_all("span", class_="NLM_string-name")
-        ])
+        author_list = [author.string for author in
+                       content.find_all("span", class_="NLM_string-name")]
+
+        authors = " ".join(
+            " ".join(author_list[i].split(", ")[::-1]) + ","
+            if i not in (len(author_list) - 1, i != len(author_list) - 2)
+            else " ".join(author_list[i].split(", ")[::-1]) + " &"
+            if i != len(author_list) - 1
+            else " ".join(author_list[i].split(", ")[::-1])
+            for i in range(len(author_list)))
 
         chapter_list = []
         for chapter in content.find_all("table", class_="articleEntry"):
 
             chapter_title = chapter.find("span", class_="hlFld-Title").string
             href = chapter.find("a", class_="ref nowrap pdf")["href"]
-
             if not chapter_title:
                 chapter_title = "Chapter " + href.rsplit(".", 1)[1]
+
             chapter_list.append(Chapter(chapter_title, href))
 
         print(f"Downloading '{title}' by {authors}")
@@ -135,25 +141,6 @@ class Application:
         return "".join(c for c in name if c.isalnum() or c in "- ._").strip() \
                + ".pdf"
 
-    @staticmethod  # TODO: review this
-    def authors_to_string(authors: List[str]) -> str:
-        """Return joined string of author names."""
-
-        string = ""
-        for i in range(len(authors)):
-            names = authors[i].split(",")
-
-            if i == 0:
-                sep = ""
-            elif i == len(authors) - 1 and i != 0:
-                sep = " and "
-            else:
-                sep = ", "
-
-            string += sep + names[1].strip() + " " + names[0].strip()
-
-        return string
-
 
 class HanserParser(ArgumentParser):
     """ArgumentParser that validates input."""
@@ -164,14 +151,14 @@ class HanserParser(ArgumentParser):
 
         example_url = "https://www.hanser-elibrary.com/isbn/9783446450523"
         usage_examples = "EXAMPLES:\n" + "\n".join((
-            f"{PROG_NAME} -u {example_url}",
-            f"{PROG_NAME} -u {example_url} -o /existing_dir",
-            f"{PROG_NAME} -u {example_url} -f -o /dir/to/create"
+            f"{PROG_NAME} {example_url}",
+            f"{PROG_NAME} -o /existing_dir {example_url}",
+            f"{PROG_NAME} -o /dir/to/create -f {example_url} "
         ))
 
         super(HanserParser, self).__init__(
             prog=PROG_NAME,
-            description="Download book as pdf from hanser-elibrary.com",
+            description=PROG_DESC,
             epilog=usage_examples,
             formatter_class=RawTextHelpFormatter,
         )
