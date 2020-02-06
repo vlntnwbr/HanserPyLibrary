@@ -26,24 +26,51 @@ You cannot yet provide a custom output filename.
 
 You must provide at least one valid URL. The program will attempt to
 fix URLs with missing schemes by defaulting to "https://". Each URL
-needs to end with a valid ISBN-13 number.
+needs to end with a valid ISBN-13 number. Valid URL formats include:
+
+**Referencing by ISBN**
+* https://www.hanser-elibrary.com/isbn/\<ISBN>
+* https://hanser-elibrary.com/isbn/\<ISBN>
+* www.hanser-elibrary.com/isbn/\<ISBN>
+* hanser-elibrary.com/isbn/\<ISBN>
+
+**Referencing by DOI and ISBN**
+* https://www.hanser-elibrary.com/doi/book/\<DOI>/\<ISBN>
+* https://hanser-elibrary.com/doi/book/\<DOI>/\<ISBN>
+* www.hanser-elibrary.com/doi/book/\<DOI>/\<ISBN>
+* hanser-elibrary.com/doi/book/\<DOI>/\<ISBN>
+
 
 ### Options
 | **Short** | **Long** | **Description** |
 | :-: | :-: | :-- |
 | -h | --help | Show help message and exit program. |
-| -o | --out | Path to output directory. Cannot point towards file. <br> If the path starts with '~' it will be expanded from the user's home directory |
+| -o | --out | Path to output directory. Relative directories supported. Cannot point towards file. <br> If the path starts with '~' it will be expanded from the user's home directory |
 | -f | --force | If set the output directory and every directory on the way will be forcibly created. |
 
 ### Examples
-Save the book in the current working directory
+#### Saving in current working directory
 
-`hanser https://www.hanser-elibrary.com/isbn/978344645052`
+`hanser https://www.hanser-elibrary.com/isbn/9783446450776`
 
-Save the book in a directory which exists
+`hanser https://hanser-elibrary.com/isbn/9783446450776`
 
-`hanser -o path/to/dir https://www.hanser-elibrary.com/isbn/9783446450523`
+`hanser www.hanser-elibrary.com/isbn/9783446450776`
 
-Save the book to a directory that may or may not exist
+`hanser hanser-elibrary.com/isbn/9783446450776`
 
-`hanser -o path/to/dir -f https://www.hanser-elibrary.com/isbn/9783446450523`
+`hanser https://www.hanser-elibrary.com/doi/book/10.3139/9783446450776`
+
+`hanser https://hanser-elibrary.com/doi/book/10.3139/9783446450776`
+
+`hanser www.hanser-elibrary.com/doi/book/10.3139/9783446450776`
+
+`hanser hanser-elibrary.com/doi/book/10.3139/9783446450776`
+
+All following examples will work with all of the URLs listed above.
+
+#### Saving in a directory that exists
+`hanser -o path/to/dir hanser-elibrary.com/isbn/9783446450776`
+
+#### Saving in a directory that may or may not exist
+`hanser -o path/to/dir -f hanser-elibrary.com/isbn/9783446450523`
