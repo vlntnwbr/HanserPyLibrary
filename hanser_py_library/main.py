@@ -254,8 +254,9 @@ class HanserParser(ArgumentParser):
             err = path_err.format("isbn", path_list[0])
             raise ArgumentTypeError(err)
 
-        if not is_isbn13(path_list[-1]):
-            err = f"path end {path_list[-1]} returns invalid ISBN-13 checksum"
+        allow_isbn10 = bool(elements == 2)
+        if not is_isbn(path_list[-1], allow_isbn10):
+            err = f"path end {path_list[-1]} returns invalid ISBN checksum"
             raise ArgumentTypeError(err)
 
         return parsed_url._replace(path=path_str).geturl()
@@ -275,19 +276,29 @@ class HanserParser(ArgumentParser):
         return path
 
 
-def is_isbn13(isbn: str) -> bool:
-    """True if :isbn: provides valid checksum for ISBN-13"""
+def is_isbn(isbn: str, isbn10_allowed: bool = True) -> bool:
+    """True if given isbn returns valid ISBN-13 or ISBN-10 checksum"""
 
-    if not isbn.isnumeric() or len(isbn) != 13:
+    if len(isbn) == 13 and isbn.isnumeric():
+        checksum = (
+            10 - sum(
+                [int(n) * (3 ** (i % 2)) for i, n in enumerate(isbn)]
+                ) % 10
+            ) % 10
+
+    elif len(isbn) == 10 and isbn[:-1].isnumeric() and isbn10_allowed:
+        isbn_parts = list(isbn)
+        if not isbn_parts[-1].isnumeric():
+            if isbn_parts[-1] not in ("x", "X"):
+                return False
+            isbn_parts[-1] = "10"
+
+        checksum = sum([int(n) * i for i, n in enumerate(isbn_parts, 1)]) % 11
+
+    else:
         return False
 
-    checksum = (
-        10 - sum(
-            [int(isbn[n]) * (3 ** (n % 2)) for n in range(len(isbn))]
-            ) % 10
-        ) % 10
-
-    return checksum == 0
+    return bool(checksum == 0)
 
 
 def log(category: str, message: str,
