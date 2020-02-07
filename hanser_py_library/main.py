@@ -7,7 +7,7 @@ merges them into a single PDF File.
 """
 
 from argparse import ArgumentParser, ArgumentTypeError, RawTextHelpFormatter
-from collections import namedtuple
+from dataclasses import dataclass
 from io import BytesIO
 import os
 import sys
@@ -21,9 +21,6 @@ from requests import get
 
 from . import PROG_NAME, PROG_DESC
 
-Chapter = namedtuple("Chapter", ["title", "href"])
-ApplicationArgs = Tuple[List[str], str, bool]
-
 
 class DownloadError(Exception):
     """Exception that occurs while the book is downloaded"""
@@ -33,7 +30,16 @@ class BookMergeError(Exception):
     """Error that occurs while merging the book"""
 
 
-class Application:  # pylint: disable=R0902
+@dataclass
+class Chapter:
+    """Chapter data."""
+
+    title: str
+    href: Optional[str] = None
+    content: Optional[BytesIO] = None
+
+
+class Application:
     """Application class."""
 
     HANSER_URL = "https://www.hanser-elibrary.com"
@@ -49,8 +55,6 @@ class Application:  # pylint: disable=R0902
         self.authors: str = ""
         self.title: str = ""
         self.chapters: List[Chapter] = []
-        self.pdf_list: List = []
-        self.merged_pdf = PdfFileMerger()
 
         if not output_dir:
             self.output_dir = os.getcwd()
@@ -99,14 +103,14 @@ class Application:  # pylint: disable=R0902
         """Download PDF content of each chapter"""
 
         for chapter in self.chapters:
-            log("download", f"'{chapter.title}'", -1, "-")
+            log("download", chapter.title, -1, "-")
             url = urljoin(self.HANSER_URL, chapter.href)
             download = get(url, params={"download": "true"})
             content = download.headers["Content-Type"].split(";", 1)[0]
 
             if download.status_code == 200:
                 if content == "application/pdf":
-                    self.pdf_list.append(BytesIO(download.content))
+                    chapter.content = BytesIO(download.content)
 
                 else:
                     raise DownloadError(
@@ -119,41 +123,43 @@ class Application:  # pylint: disable=R0902
     def merge_and_write_pdf(self) -> None:
         """Merges all PDFs in pdf_list into one file and saves it"""
 
-        if not self.pdf_list:
+        if not self.chapters:
             raise BookMergeError("No PDFs to merge.")
 
-        for pdf in self.pdf_list:
-            self.merged_pdf.append(pdf)
-        log("info", "Merge Complete.")
+        merged_pdf = PdfFileMerger()
+        for pdf in self.chapters:
+            merged_pdf.append(pdf.content)
+        log("info", "Merge Complete.", -1, "-")
 
-        if len(self.merged_pdf.pages) <= 0:
+        if len(merged_pdf.pages) <= 0:
             raise BookMergeError("No book to save.")
 
         if not os.path.isdir(self.output_dir) and self.force_dir:
-            log("info", f"Creating '{self.output_dir}'")
+            log("info", f"Creating '{self.output_dir}'", -1, "-")
             os.makedirs(self.output_dir)
 
         try:
-            log("info", f"Saving '{self.title}.pdf' to '{self.output_dir}'")
-            self._write_pdf()
+            log("info",
+                f"Saving '{self.title}.pdf' to '{self.output_dir}'",
+                -1, "-")
+            self._write_pdf(merged_pdf)
         except (FileNotFoundError, OSError):
-            log("warning", f"'{self.title}' contains invalid characters.")
+            log("warning", "Filename contains invalid characters.", 0, "*")
             log("info", f"Saving as '{self.isbn}.pdf' instead")
-            self._write_pdf(self.isbn)
+            self._write_pdf(merged_pdf, self.isbn)
 
-    def _write_pdf(self, filename: Optional[str] = None) -> None:
+    def _write_pdf(self, pdf: PdfFileMerger,
+                   filename: Optional[str] = None) -> None:
         """Write contents of merged PDF to file"""
 
         if not filename:
             filename = self.title
 
-        self.merged_pdf.write(os.path.join(self.output_dir, filename + ".pdf"))
+        pdf.write(os.path.join(self.output_dir, filename + ".pdf"))
 
 
 class HanserParser(ArgumentParser):
     """ArgumentParser that validates input."""
-
-    ParserArgFlags = namedtuple("ParserArgFlags", ["short", "long"])
 
     def __init__(self) -> None:
 
@@ -171,9 +177,6 @@ class HanserParser(ArgumentParser):
             formatter_class=RawTextHelpFormatter,
         )
 
-        self.out = self.ParserArgFlags("-o", "--out")
-        self.force = self.ParserArgFlags("-f", "--force")
-
         self.add_args()
 
     def add_args(self) -> None:
@@ -184,11 +187,11 @@ class HanserParser(ArgumentParser):
             metavar="URL",
             help="URL(s) of book(s) to download",
             type=self.is_application_url,
-            nargs="+"
+            nargs="*"
         )
 
         self.add_argument(
-            self.out.short, self.out.long,
+            "-o", "--out",
             metavar="OUT",
             help="Path to output path. Cannot point to file.",
             type=self.is_valid_dir_path,
@@ -196,23 +199,47 @@ class HanserParser(ArgumentParser):
         )
 
         self.add_argument(
-            self.force.short, self.force.long,
+            "-f", "--force",
             action="store_true",
             help="Set this to force creation of path to output dir",
             dest="force_dir"
         )
 
-    def validate_args(self) -> ApplicationArgs:
+        self.add_argument(
+            "--isbn",
+            help="ISBN(s) of book(s) to download. Can be either ISBN-10 or 13",
+            type=self.isbn_to_hanser_url,
+            nargs="*",
+            default=[]
+        )
+
+    def validate_args(self) -> Tuple[List[str], str, bool]:
         """Validate arguments"""
 
         parsed = self.parse_args()
 
+        if not parsed.url and not parsed.isbn:
+            self.error(
+                "at least one of the following arguments is required: "
+                "URL, --isbn")
+
         if parsed.out and not os.path.isdir(parsed.out):
             if not parsed.force_dir:
                 self.error(f"Directory '{parsed.out}' doesn't exist and "
-                           f"{'/'.join(self.force)} was not set")
+                           f"-f/--force was not set")
 
-        return parsed.url, parsed.out, parsed.force_dir
+        return parsed.isbn + parsed.url, parsed.out, parsed.force_dir
+
+    @staticmethod
+    def isbn_to_hanser_url(isbn: str) -> str:
+        """Turn a valid isbn string into an URL for hanser-elibrary"""
+
+        if isbn:
+            if not is_isbn(isbn):
+                raise ArgumentTypeError(
+                    f"'{isbn}' returns invalid ISBN checksum")
+            return urljoin(Application.HANSER_URL, "/".join(["isbn", isbn]))
+        return isbn
 
     @staticmethod
     def is_application_url(url: str) -> str:
@@ -242,7 +269,7 @@ class HanserParser(ArgumentParser):
         path_str = "/".join(path_list)
         path_err = "path must start with '{}' not '{}'"
 
-        if (elements := len(path_list)) != 2 and elements != 4:  # pylint: disable=E0601
+        if (elements := len(path_list)) != 2 and elements != 4:  # pylint: disable=E0601 # noqa
             err = f"invalid amount of path elements in '{path_str}'"
             raise ArgumentTypeError(err)
 
@@ -327,19 +354,20 @@ def main() -> None:
         err_msg = "Skipped ISBN " + book.isbn + " due to: {} error: {}"
 
         try:
-            log("info", f"Fetching info for {book.isbn}", 0)
+            log("info", f"Getting chapters for ISBN: {book.isbn}", 0)
             book.get_book_info()
-            log("info", f"Start downloading '{book.title}' by {book.authors}")
+            chapter_msg = "Start {} '" + book.title + "' by " + book.authors
+            log("info", chapter_msg.format("downloading"))
             book.download_book()
             log("info", "Download successful!", 0)
-            log("info", "Start Merging and writing", 1)
+            log("info", chapter_msg.format("merging"))
             book.merge_and_write_pdf()
             log("done", "", 0, end="\n")
 
         except DownloadError as exc:
-            log("error", err_msg.format("download", exc.args[0]), 0, "*", "\n")
+            log("error", err_msg.format("download", exc.args[0]), 0, "+", "\n")
         except BookMergeError as exc:
-            log("error", err_msg.format("merge", {exc.args[0]}), 0, "*", "\n")
+            log("error", err_msg.format("merge", {exc.args[0]}), 0, "+", "\n")
         except KeyboardInterrupt:
             log("exit", "Aborting and exiting Program...", 0)
             sys.exit()

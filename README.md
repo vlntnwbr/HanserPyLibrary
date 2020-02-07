@@ -24,10 +24,10 @@ You cannot yet provide a custom output filename.
 *  Make sure you have pipenv installed
 
 ## Usage
-`hanser [OPTIONS] URL(s) [URL, ...]`
+`hanser [OPTIONS] URL(s) [URL, ...] --isbn [ISBN, ...]`
 
-You must provide at least one valid URL. The program will attempt to
-fix URLs with missing schemes by defaulting to "https://". Each URL
+You must provide at least one valid URL or ISBN. The program will attempt
+to fix URLs with missing schemes by defaulting to "https://". Each URL
 needs to end with a valid ISBN-13 number. Valid URL formats include:
 
 **Referencing by ISBN-10 or ISBN-13**
@@ -48,27 +48,16 @@ needs to end with a valid ISBN-13 number. Valid URL formats include:
 | -h | --help | Show help message and exit program. |
 | -o | --out | Path to output directory. Relative and abstract paths supported. Cannot point towards file. <br> If the path starts with '~' it will be expanded from the user's home directory |
 | -f | --force | If set the output directory and every directory on the way will be forcibly created. |
+|    | --isbn | ISBN(s) of books(s) to download. Can be either ISBN-10 or 13. <br> If ISBN(s) and URL(s) are provided, ISBN books will be downloaded before URL books. |
 
 ### Examples
 #### Saving in current working directory
 
 `hanser https://www.hanser-elibrary.com/isbn/9783446450776`
 
-`hanser https://hanser-elibrary.com/isbn/9783446450776`
-
-`hanser www.hanser-elibrary.com/isbn/9783446450776`
-
-`hanser hanser-elibrary.com/isbn/9783446450776`
-
 `hanser https://www.hanser-elibrary.com/doi/book/10.3139/9783446450776`
 
-`hanser https://hanser-elibrary.com/doi/book/10.3139/9783446450776`
-
-`hanser www.hanser-elibrary.com/doi/book/10.3139/9783446450776`
-
-`hanser hanser-elibrary.com/doi/book/10.3139/9783446450776`
-
-All following examples will work with all of the URLs listed above.
+`hanser --isbn 9783446450776`
 
 #### Saving in a directory that exists
 `hanser -o path/to/dir hanser-elibrary.com/isbn/9783446450776`
