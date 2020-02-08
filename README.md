@@ -1,4 +1,4 @@
-# Hanser PyLibrary
+![](https://github.com/vlntnwbr/HanserPyLibrary/workflows/HanserPyLibrary/badge.svg)
 
 This tool downloads each chapter of a book from *<https://www.hanser-elibrary.com>* 
 and merges them into a single PDF File called *{Booktitle}.pdf*. If the
@@ -17,11 +17,9 @@ program was called, but you can provide a custom output directory.
 You cannot yet provide a custom output filename.
 
 ## Installation
-`pip install https://github.com/vlntnwbr/HanserPyLibrary/archive/master.zip`
+`pip install https://github.com/vlntnwbr/HanserPyLibrary/releases/latest/download/hanser-py-library.tar.gz`
 
 *  Make sure you have Python Version 3.8 or greater
-*  Make sure the Python/Scripts folder is part of your PATH variables
-*  Make sure you have pipenv installed
 
 ## Usage
 `hanser [OPTIONS] URL(s) [URL, ...] --isbn [ISBN, ...]`
