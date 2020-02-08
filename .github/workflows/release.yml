@@ -23,7 +23,7 @@ jobs:
         pip install pipenv
         pipenv lock
         python setup.py sdist
-        version=$(python setup.py --version=)
+        version=$(python setup.py --version)
         sdist="./dist/hanser-py-library-${version}.tar.gz"
         echo "Moving ${sdist}..."
         cp $sdist ./hanser-py-library.tar.gz
