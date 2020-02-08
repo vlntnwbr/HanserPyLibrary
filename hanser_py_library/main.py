@@ -269,7 +269,7 @@ class HanserParser(ArgumentParser):
         path_str = "/".join(path_list)
         path_err = "path must start with '{}' not '{}'"
 
-        if (elements := len(path_list)) != 2 and elements != 4:  # pylint: disable=E0601 # noqa
+        if (elements := len(path_list)) != 2 and elements != 4:  # noqa pylint: disable=E0601
             err = f"invalid amount of path elements in '{path_str}'"
             raise ArgumentTypeError(err)
 
