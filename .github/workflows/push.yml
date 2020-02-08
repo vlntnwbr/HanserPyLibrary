@@ -1,4 +1,4 @@
-name: HanserPyLibrary-Push
+name: HanserPyLibrary
 on:
   push:
     branches: 
