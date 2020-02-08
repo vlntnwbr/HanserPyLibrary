@@ -1,0 +1,63 @@
+name: HanserPyLibrary
+
+on:
+  push:
+    tags:
+      - v*
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Setup Python 3.8
+      uses: actions/setup-python@v1
+      with:
+        python-version: 3.8
+
+    - name: Build
+      id: build
+      run: |
+        python -m pip install --upgrade -q pip setuptools
+        pip install pipenv
+        python setup.py sdist
+        version=$(python setup.py --version=)
+        sdist="./dist/hanser-py-library-${version}.tar.gz"
+        echo "Moving ${sdist}..."
+        cp $sdist ./hanser-py-library.tar.gz
+
+    - name: Preparing Checks
+      id: check
+      run: |
+        pipenv lock -r -d > devreqs.txt
+        pip install -r devreqs.txt -r requirements.txt
+
+    - name: PyLint
+      id: pylint
+      run: pylint -f colorized hanser_py_library || pylint-exit -efail -wfail $?
+
+    - name: Flake8
+      id: flake8
+      run: flake8 --exit-zero --doctests --max-doc-length 72 hanser_py_library
+
+    - name: Create Release
+      id: release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.ref }}
+        release_name: HanserPyLibrary ${{ github.ref }}
+        body: https:/github.com/vlntnwbr/PyWhere/tree/${{ github.ref }}
+
+    - name: Upload Package
+      id: upload
+      uses: actions/upload-release-asset@v1.0.1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.release.outputs.upload_url }}
+        asset_path: ./hanser-py-library.tar.gz
+        asset_name: hanser-py-library.tar.gz
+        asset_content_type: application/gzip

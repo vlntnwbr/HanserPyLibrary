@@ -9,8 +9,9 @@ beautifulsoup4 = ">=4.8.1"
 PyPDF2 = ">=1.26"
 
 [dev-packages]
-pylint = "*"
 flake8 = "*"
+pylint = "*"
+pylint-exit = "*"
 
 [requires]
 python_version = "3.8"
