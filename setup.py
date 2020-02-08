@@ -8,7 +8,7 @@ from setuptools import find_packages, setup
 
 from hanser_py_library import PROG_NAME, PROG_DESC
 
-VERSION = "0.1.1"
+VERSION = "0.1.2"
 REQUIREMENTS_TXT = "requirements.txt"
 HEREDIR = path.abspath(path.dirname(__file__))
 
