@@ -1,4 +1,4 @@
-name: HanserPyLibrary
+name: HanserPyLibrary-Push
 on:
   push:
     tags-ignore:
