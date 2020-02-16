@@ -1,8 +1,9 @@
-name: HanserPyLibrary
+name: Check
 on:
   push:
     branches: 
       - master
+      - v0.2.0
     tags-ignore:
       v*
 

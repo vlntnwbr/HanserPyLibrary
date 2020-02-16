@@ -1,4 +1,5 @@
-![](https://github.com/vlntnwbr/HanserPyLibrary/workflows/HanserPyLibrary/badge.svg)
+![](https://github.com/vlntnwbr/HanserPyLibrary/workflows/Release/badge.svg)
+![](https://github.com/vlntnwbr/HanserPyLibrary/workflows/Check/badge.svg)
 
 This tool downloads each chapter of a book from *<https://www.hanser-elibrary.com>* 
 and merges them into a single PDF File called *{Booktitle}.pdf*. If the
@@ -29,16 +30,16 @@ to fix URLs with missing schemes by defaulting to "https://". Each URL
 needs to end with a valid ISBN-13 number. Valid URL formats include:
 
 **Referencing by ISBN-10 or ISBN-13**
-* https://www.hanser-elibrary.com/isbn/\<ISBN>
-* https://hanser-elibrary.com/isbn/\<ISBN>
-* www.hanser-elibrary.com/isbn/\<ISBN>
-* hanser-elibrary.com/isbn/\<ISBN>
+* https://www.hanser-elibrary.com/isbn/{ISBN}
+* https://hanser-elibrary.com/isbn/{ISBN}
+* www.hanser-elibrary.com/isbn/{ISBN}
+* hanser-elibrary.com/isbn/{ISBN}
 
 **Referencing by DOI and ISBN-13**
-* https://www.hanser-elibrary.com/doi/book/\<DOI>/\<ISBN>
-* https://hanser-elibrary.com/doi/book/\<DOI>/\<ISBN>
-* www.hanser-elibrary.com/doi/book/\<DOI>/\<ISBN>
-* hanser-elibrary.com/doi/book/\<DOI>/\<ISBN>
+* https://www.hanser-elibrary.com/doi/book/{DOI}/{ISBN}
+* https://hanser-elibrary.com/doi/book/{DOI}/{ISBN}
+* www.hanser-elibrary.com/doi/book/{DOI}/{ISBN}
+* hanser-elibrary.com/doi/book/{DOI}/{ISBN}
 
 ### Options
 | **Short** | **Long** | **Description** |
