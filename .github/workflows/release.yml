@@ -1,4 +1,4 @@
-name: HanserPyLibrary
+name: Release
 
 on:
   push:

@@ -1,4 +1,5 @@
-# Hanser PyLibrary
+![](https://github.com/vlntnwbr/HanserPyLibrary/workflows/Release/badge.svg)
+![](https://github.com/vlntnwbr/HanserPyLibrary/workflows/Check/badge.svg)
 
 This tool downloads each chapter of a book from *<https://www.hanser-elibrary.com>* 
 and merges them into a single PDF File called *{Booktitle}.pdf*. If the
@@ -17,11 +18,9 @@ program was called, but you can provide a custom output directory.
 You cannot yet provide a custom output filename.
 
 ## Installation
-`pip install https://github.com/vlntnwbr/HanserPyLibrary/archive/master.zip`
+`pip install https://github.com/vlntnwbr/HanserPyLibrary/releases/latest/download/hanser-py-library.tar.gz`
 
 *  Make sure you have Python Version 3.8 or greater
-*  Make sure the Python/Scripts folder is part of your PATH variables
-*  Make sure you have pipenv installed
 
 ## Usage
 `hanser [OPTIONS] URL(s) [URL, ...] --isbn [ISBN, ...]`
@@ -31,16 +30,16 @@ to fix URLs with missing schemes by defaulting to "https://". Each URL
 needs to end with a valid ISBN-13 number. Valid URL formats include:
 
 **Referencing by ISBN-10 or ISBN-13**
-* https://www.hanser-elibrary.com/isbn/\<ISBN>
-* https://hanser-elibrary.com/isbn/\<ISBN>
-* www.hanser-elibrary.com/isbn/\<ISBN>
-* hanser-elibrary.com/isbn/\<ISBN>
+* https://www.hanser-elibrary.com/isbn/{ISBN}
+* https://hanser-elibrary.com/isbn/{ISBN}
+* www.hanser-elibrary.com/isbn/{ISBN}
+* hanser-elibrary.com/isbn/{ISBN}
 
 **Referencing by DOI and ISBN-13**
-* https://www.hanser-elibrary.com/doi/book/\<DOI>/\<ISBN>
-* https://hanser-elibrary.com/doi/book/\<DOI>/\<ISBN>
-* www.hanser-elibrary.com/doi/book/\<DOI>/\<ISBN>
-* hanser-elibrary.com/doi/book/\<DOI>/\<ISBN>
+* https://www.hanser-elibrary.com/doi/book/{DOI}/{ISBN}
+* https://hanser-elibrary.com/doi/book/{DOI}/{ISBN}
+* www.hanser-elibrary.com/doi/book/{DOI}/{ISBN}
+* hanser-elibrary.com/doi/book/{DOI}/{ISBN}
 
 ### Options
 | **Short** | **Long** | **Description** |
