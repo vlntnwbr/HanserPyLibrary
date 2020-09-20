@@ -2,7 +2,7 @@
 
 import subprocess
 from os import path
-from typing import List, Optional, TextIO
+from typing import List, TextIO
 
 from setuptools import find_packages, setup
 
@@ -22,10 +22,13 @@ def execute_command(args: List[str]) -> List[str]:
     """Execute external command and return stdout as list of strings."""
 
     try:
-        process = subprocess.run(args, stdout=subprocess.PIPE, check=True)
-        return [
-            line.strip() for line in process.stdout.decode("utf-8").split("\n")
-        ]
+        process = subprocess.run(
+            args,
+            capture_output=True,
+            check=True,
+            text=True
+        )
+        return [line.strip() for line in process.stdout.splitlines()]
     except subprocess.CalledProcessError:
         return []
 
@@ -58,28 +61,11 @@ def read_requirements() -> List[str]:
                 if line and not line.startswith("#")]
 
 
-def get_version() -> Optional[str]:
-    """Get Version number from latest git tag."""
-
-    try:
-        with open_local(".git/HEAD"):
-            pass
-    except FileNotFoundError:
-        return
-
-    git_version_lines = execute_command(["git", "describe"])
-    if not git_version_lines:
-        return
-
-    return git_version_lines[0][1:]
-
-
 if __name__ == '__main__':
     create_requirements_txt()
     INSTALL_REQUIRES = read_requirements()
     README = open_local("README.md").read()
-    VERSION = get_version()
-
+    VERSION = "0.1.4"
     setup(
         name="hanser-py-library",
         description=PROG_DESC,

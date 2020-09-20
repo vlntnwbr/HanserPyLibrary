@@ -1,5 +1,6 @@
-![](https://github.com/vlntnwbr/HanserPyLibrary/workflows/Release/badge.svg)
-![](https://github.com/vlntnwbr/HanserPyLibrary/workflows/Check/badge.svg)
+# hanser-py-library
+**Warning:** This software is currently broken, in part due to a redesign
+of <https://www.hanser-elibrary.com>
 
 This tool downloads each chapter of a book from *<https://www.hanser-elibrary.com>* 
 and merges them into a single PDF File called *{Booktitle}.pdf*. If the
