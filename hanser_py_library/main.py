@@ -94,6 +94,8 @@ class HanserParser(ArgumentParser):
         """Turn a valid isbn string into an URL for hanser-elibrary"""
 
         if isbn:
+            if "-" in isbn:
+                isbn = isbn.replace("-", "")
             if not is_isbn(isbn):
                 raise ArgumentTypeError(f"Invalid ISBN checksum for '{isbn}'")
             return urljoin(HanserParser.HANSER_URL, "/".join(["isbn", isbn]))

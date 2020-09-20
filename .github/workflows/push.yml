@@ -26,14 +26,14 @@ jobs:
         pipenv install -d
         pipenv graph
         echo "::set-env name=package::hanser_py_library"
-    - name: Run Pylint
-      if: ${{ github.ref == 'refs/heads/master' }}
-      id: pylint
-      run: pipenv run pylint -f colorized ${{ env.package }} || pipenv run pylint-exit -efail -wfail $?
     - name: Run Flake8
       if: ${{ github.ref == 'refs/heads/master' }}
       id: flake8
       run : pipenv run flake8 --exit-zero --doctests --max-doc-length 72 ${{ env.package }}
+    - name: Run Pylint
+      if: ${{ github.ref == 'refs/heads/master' }}
+      id: pylint
+      run: pipenv run pylint -f colorized ${{ env.package }} || pipenv run pylint-exit -efail -wfail $?
     - name: Build Source Distribution
       id: build
       run: |
