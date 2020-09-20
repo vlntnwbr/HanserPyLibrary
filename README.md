@@ -1,4 +1,5 @@
-# hanser-py-library
+# hanser-py-library ![](https://github.com/vlntnwbr/hanserpylibrary/workflows/Tests/badge.svg)
+
 **Warning:** This software is currently broken, in part due to a redesign
 of <https://www.hanser-elibrary.com>
 

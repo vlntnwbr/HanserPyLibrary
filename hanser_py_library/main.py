@@ -21,6 +21,7 @@ from requests import get
 
 from . import PROG_NAME, PROG_DESC
 
+# TODO: Fix Website parser
 
 class DownloadError(Exception):
     """Exception that occurs while the book is downloaded"""
