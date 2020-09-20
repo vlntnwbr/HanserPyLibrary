@@ -2,13 +2,12 @@
 
 import subprocess
 from os import path
-from typing import List, TextIO
+from typing import List, Optional, TextIO
 
 from setuptools import find_packages, setup
 
 from hanser_py_library import PROG_NAME, PROG_DESC
 
-VERSION = "0.1.4"
 REQUIREMENTS_TXT = "requirements.txt"
 HEREDIR = path.abspath(path.dirname(__file__))
 
@@ -59,10 +58,27 @@ def read_requirements() -> List[str]:
                 if line and not line.startswith("#")]
 
 
+def get_version() -> Optional[str]:
+    """Get Version number from latest git tag."""
+
+    try:
+        with open_local(".git/HEAD"):
+            pass
+    except FileNotFoundError:
+        return
+
+    git_version_lines = execute_command(["git", "describe"])
+    if not git_version_lines:
+        return
+
+    return git_version_lines[0][1:]
+
+
 if __name__ == '__main__':
     create_requirements_txt()
-    README = open_local("README.md").read()
     INSTALL_REQUIRES = read_requirements()
+    README = open_local("README.md").read()
+    VERSION = get_version()
 
     setup(
         name="hanser-py-library",
