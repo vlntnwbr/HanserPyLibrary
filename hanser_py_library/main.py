@@ -12,8 +12,8 @@ def main() -> None:
     """Entry point as specified by PROG_NAME"""
 
     args = MainParser()
-    log("", "Starting hanser-py-library", 0)
     urls, dest, force = args.validate()
+    log("", "Starting hanser-py-library", 0)
     try:
         app = DownloadManager(HANSER_URL, dest, force)
     except PermissionError:
