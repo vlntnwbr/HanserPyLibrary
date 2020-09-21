@@ -1,6 +1,4 @@
-"""Global values and utility functions for hanser-py-library"""
-
-import textwrap
+"""Utilities for hanser-py-library"""
 
 HANSER_URL = "https://www.hanser-elibrary.com"
 
@@ -30,24 +28,17 @@ def is_isbn(isbn: str, isbn10_allowed: bool = True) -> bool:
     return bool(checksum == 0)
 
 
-def log(cat: str, msg: str, div: int = None, div_char: str = "-") -> None:
+def log(cat: str, msg: str, div: bool = False) -> None:
     """Log categorized message with optional divider"""
-
-    if "\n" in msg:
-        msg = msg.replace("\n", "\n\t")
 
     line_length, indent = 79, 10
     log_msg = "{:" + str(indent) + "}{}"
-    message = textwrap.fill(
-        log_msg.format(cat.upper(), msg),
-        width=line_length,
-        tabsize=indent,
-        replace_whitespace=False,
-        subsequent_indent=" " * 10,
-    )
 
-    if div in (0, -1):
-        print(div_char * line_length)
-    print(message)
-    if div in (0, 1):
-        print(div_char * line_length)
+    if "\n" in msg:
+        msg = msg.replace("\n", "\n" + " " * indent)
+
+    if div:
+        print("-" * line_length)
+    print(log_msg.format(cat.upper(), msg))
+    if div:
+        print("-" * line_length)

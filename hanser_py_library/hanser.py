@@ -8,11 +8,9 @@ from urllib.parse import urljoin
 
 from bs4 import BeautifulSoup
 from PyPDF2 import PdfFileMerger
-from requests import get
 import requests
 
 from .exceptions import AccessError, MetaError, MergeError, DownloadError
-from .utils import HANSER_URL
 
 
 @dataclass
@@ -45,19 +43,23 @@ class BookParser:  # pylint: disable=too-few-public-methods
     def make_book(self) -> Book:
         """Retrieve authors and title for book"""
 
-        response = requests.get(self.url)
+        try:
+            response = requests.get(self.url)
+            response.raise_for_status()
+        except requests.exceptions.RequestException as exc:
+            if isinstance(exc, requests.exceptions.HTTPError):
+                err_msg = f"{self.url} returned {response.status_code}"
+            else:
+                err_msg = "Unable to establish connection to {self.url}"
+            raise AccessError(err_msg)  # pylint: disable=raise-missing-from
+
         book = BeautifulSoup(response.content, "html.parser")
-
-        if response.status_code in (404, 500):
-            raise AccessError(f"{self.url} returned {response.status_code}")
-
         title_search = book.find("h1", class_="current-issue__title")
         if title_search is None:
             raise MetaError("no title found")
         title = title_search.string.strip()
 
-        no_access = book.find("i", class_="icon-lock")
-        if no_access is not None:
+        if book.find("i", class_="icon-lock") is not None:
             raise AccessError(f"unauthorized to download '{title}'")
 
         author_search = book.find_all("span", class_="hlFld-ContribAuthor")
@@ -81,7 +83,38 @@ class BookParser:  # pylint: disable=too-few-public-methods
                 chapter_search.string, href_search["href"]
             ))
 
-        return Book(self.url, authors, chapter_list, self.isbn, title)
+        return Book(
+            self.url,
+            authors,
+            chapter_list,
+            self.isbn,
+            title
+        )
+
+
+class DownloadManager:
+    """Download and save a book"""
+
+    def __init__(self, base_url: str, dest: str, force_dest: bool = False):
+        self.base_url = base_url
+        self.dest = dest
+        self.force_dest = force_dest
+
+    def download_chapter(self, chapter: Chapter) -> Chapter:
+        """Download chapter content"""
+
+        url = urljoin(self.base_url, chapter.href)
+        try:
+            download = requests.get(url, params={"download": "true"})
+            download.raise_for_status()
+        except requests.exceptions.RequestException as exc:
+            raise DownloadError from exc
+
+        content = download.headers["Content-Type"].split(";")[0]
+        if content != "application/pdf":
+            raise DownloadError(f"{download.url} did not send a pdf file")
+        chapter.content = download.content
+        return chapter
 
 
 class Application:
@@ -103,64 +136,6 @@ class Application:
             self.output_dir = os.getcwd()
         else:
             self.output_dir = output_dir.strip()
-
-    def get_book_info(self) -> None:
-        """Get title, authors and chapters and check authorization."""
-
-        response = get(self.url)
-        book = BeautifulSoup(response.content, "html.parser")
-
-        if response.status_code in (404, 500):
-            raise DownloadError(book.find("p", class_="error").string)
-
-        self.title = book.find(
-            "div", id="articleToolsHeading").string.strip()
-
-        no_access = book.find("img", {"class": "accessIcon",
-                                         "alt": "no access"})
-
-        if no_access is not None:
-            raise DownloadError(f"Unauthorized to download '{self.title}'")
-
-        author_list = [author.string for author in
-                       book.find_all("span", class_="NLM_string-name")]
-
-        self.authors = " ".join(
-            " ".join(author_list[i].split(", ")[::-1]) + ","
-            if i not in (len(author_list) - 1, i != len(author_list) - 2)
-            else " ".join(author_list[i].split(", ")[::-1]) + " &"
-            if i != len(author_list) - 1
-            else " ".join(author_list[i].split(", ")[::-1])
-            for i in range(len(author_list)))
-
-        for chapter in book.find_all("table", class_="articleEntry"):
-
-            chapter_title = chapter.find("span", class_="hlFld-Title").string
-            href = chapter.find("a", class_="ref nowrap pdf")["href"]
-            if not chapter_title:
-                chapter_title = "Chapter " + href.rsplit(".", 1)[1]
-
-            self.chapters.append(Chapter(chapter_title, href))
-
-    def download_book(self) -> None:
-        """Download PDF content of each chapter"""
-
-        for chapter in self.chapters:
-            url = urljoin(HANSER_URL, chapter.href)
-            download = get(url, params={"download": "true"})
-            content = download.headers["Content-Type"].split(";", 1)[0]
-
-            if download.status_code == 200:
-                if content == "application/pdf":
-                    chapter.content = BytesIO(download.content)
-
-                else:
-                    raise DownloadError(
-                        f"'{url}' sent {content} not 'application/pdf'")
-
-            else:
-                code = download.status_code
-                raise DownloadError(f"'{url}' Response Code: {code}")
 
     def merge_and_write_pdf(self) -> None:
         """Merges all PDFs in pdf_list into one file and saves it"""

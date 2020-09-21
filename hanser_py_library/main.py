@@ -13,7 +13,8 @@ from typing import List, Tuple
 from urllib.parse import urlparse, urljoin
 
 from . import PROG_NAME, PROG_DESC
-from .hanser import BookParser
+from .exceptions import AccessError, DownloadError, MetaError
+from .hanser import BookParser, DownloadManager
 from .utils import HANSER_URL, is_isbn, log
 
 
@@ -168,14 +169,23 @@ def main() -> None:
 
     args = HanserParser()
     urls, dest, force = args.validate()
+    hanser = DownloadManager(HANSER_URL, dest, force)
     for url in urls:
-        search = BookParser(url)
-        log("info", f"Fetching book info for ISBN: {search.isbn}", -1)
-        book = search.make_book()
-        log("info", f"Found '{book.title}' by {book.authors} "
-            f"with {len(book.chapters)} chapters.", 1)
-        for chapter in book.chapters:
-            log("download", f"{chapter.title} at {chapter.href}.")
+        try:
+            search = BookParser(url)
+            err_msg = "Skipped ISBN " + search.isbn + ":\n{}"
+            log("info", f"Fetching book info for ISBN: {search.isbn}")
+            book = search.make_book()
+            log("info", f"Found '{book.title}' by {book.authors} "
+                f"with {len(book.chapters)} chapters.", 1)
+            for i, chapter in enumerate(book.chapters):
+                log("download", f"{chapter.title}")
+                book.chapters[i] = hanser.download_chapter(chapter)
+        except (AccessError, DownloadError, MetaError) as exc:
+            log("error", err_msg.format(exc.args[0]), div=True)
+        except KeyboardInterrupt:
+            log("exit", "Operation cancelled by user", 0)
+            sys.exit()
 
 
 if __name__ == '__main__':
