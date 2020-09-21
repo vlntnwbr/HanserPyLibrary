@@ -130,7 +130,7 @@ class HanserParser(ArgumentParser):
         path_str = "/".join(path_list)
         path_err = "path must start with '{}' not '{}'"
 
-        if (elements := len(path_list)) != 2 and elements != 4:  # noqa pylint: disable=E0601
+        if (elements := len(path_list)) != 2 and elements != 4:  # noqa pylint: disable=used-before-assignment
             err = f"invalid amount of path elements in '{path_str}'"
             raise ArgumentTypeError(err)
 
@@ -167,10 +167,14 @@ class HanserParser(ArgumentParser):
 def main() -> None:
     """Main entry point."""
 
-    log("info", "Starting hanser-py-library", 0)
+    log("", "Starting hanser-py-library", 0)
     args = HanserParser()
     urls, dest, force = args.validate()
-    hanser = DownloadManager(HANSER_URL, dest, force)
+    try:
+        app = DownloadManager(HANSER_URL, dest, force)
+    except PermissionError:
+        log("exit", f"Could not create output dir {dest}", 1)
+        sys.exit(1)
     for url in urls:
         try:
             search = BookParser(url)
@@ -178,18 +182,19 @@ def main() -> None:
             log("info", f"Fetching book info for ISBN: {search.isbn}")
             book = search.make_book()
             log("info", f"Found '{book.title}' by {book.authors} "
-                f"with {len(book.chapters)} chapters.")
+                f"with {len(book.chapters)} chapters")
             for i, chapter in enumerate(book.chapters):
-                log("download", f"#{i} {chapter.title}")
-                book.chapters[i] = hanser.download_chapter(chapter)
-        except (AccessError, DownloadError, MetaError) as exc:
-            log("error", err_msg.format(exc.args[0]), div=0)
-        except MergeError as exc:
-            raise exc
+                log("download", f"# {i + 1} - {chapter.title}...")
+                book.chapters[i] = app.download_chapter(chapter)
+            log("info", f"Collecting '{book.title}'...")
+            result = app.write_book(book)
+            log("info", f"Saved book as {result}", 1)
+        except (AccessError, DownloadError, MetaError, MergeError) as exc:
+            log("error", err_msg.format(exc.args[0]), 0)
         except KeyboardInterrupt:
-            log("exit", "Operation cancelled by user", 0)
-            sys.exit()
-    log("exit", "", -1)
+            log("exit", "Operation cancelled by user", 1)
+            sys.exit(1)
+    log("exiting", "")
 
 
 if __name__ == '__main__':

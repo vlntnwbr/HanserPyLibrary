@@ -1,0 +1,1 @@
+pylint -f colorized hanser_py_library

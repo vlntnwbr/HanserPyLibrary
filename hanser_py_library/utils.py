@@ -1,5 +1,9 @@
 """Utilities for hanser-py-library"""
 
+import os
+
+from PyPDF2 import PdfFileMerger
+
 HANSER_URL = "https://www.hanser-elibrary.com"
 
 
@@ -42,3 +46,15 @@ def log(cat: str, msg: str, div: int = None) -> None:
     print(log_msg.format(cat.upper(), msg))
     if div in (0, 1):
         print("-" * line_length)
+
+
+def write_pdf(pdf: PdfFileMerger, dest: str, name: str) -> bool:
+    """Writes content of pdf to a file at the given destination"""
+
+    try:
+        pdf.write(os.path.join(dest, name + ".pdf"))
+        return True
+    except PermissionError:
+        raise  # pylint: disable=try-except-raise
+    except (FileNotFoundError, OSError):
+        return False
