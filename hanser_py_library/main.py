@@ -8,21 +8,21 @@ merges them into a single PDF File.
 
 from argparse import ArgumentParser, ArgumentTypeError, RawTextHelpFormatter
 import os
+import sys
 from typing import List, Tuple
 from urllib.parse import urlparse, urljoin
 
 from . import PROG_NAME, PROG_DESC
-from .utils import is_isbn
+from .hanser import BookParser
+from .utils import HANSER_URL, is_isbn, log
 
 
 class HanserParser(ArgumentParser):
-    """ArgumentParser for hanser-py-library."""
-
-    HANSER_URL = "https://www.hanser-elibrary.com"
+    """ArgumentParser for hanser-py-library"""
 
     def __init__(self) -> None:
 
-        example_url = urljoin(self.HANSER_URL, "/isbn/9783446450523")
+        example_url = urljoin(HANSER_URL, "/isbn/9783446450523")
         usage_examples = "EXAMPLES:\n" + "\n".join((
             f"{PROG_NAME} {example_url}",
             f"{PROG_NAME} -o /existing_dir {example_url}",
@@ -98,14 +98,14 @@ class HanserParser(ArgumentParser):
                 isbn = isbn.replace("-", "")
             if not is_isbn(isbn):
                 raise ArgumentTypeError(f"Invalid ISBN checksum for '{isbn}'")
-            return urljoin(HanserParser.HANSER_URL, "/".join(["isbn", isbn]))
+            return urljoin(HANSER_URL, "/".join(["isbn", isbn]))
         return isbn
 
     @staticmethod
     def is_application_url(url: str) -> str:
         """Check if URL is valid url for hanser-elibrary.com"""
 
-        hanser_url = urlparse(HanserParser.HANSER_URL)
+        hanser_url = urlparse(HANSER_URL)
         parsed_url = urlparse(url.strip())
 
         # Replace missing/invalid scheme and build correct netloc & path
@@ -168,9 +168,14 @@ def main() -> None:
 
     args = HanserParser()
     urls, dest, force = args.validate()
-    print(dest, force)
     for url in urls:
-        print(" " * 4 + url)
+        search = BookParser(url)
+        log("info", f"Fetching book info for ISBN: {search.isbn}", -1)
+        book = search.make_book()
+        log("info", f"Found '{book.title}' by {book.authors} "
+            f"with {len(book.chapters)} chapters.", 1)
+        for chapter in book.chapters:
+            log("download", f"{chapter.title}")
 
 
 if __name__ == '__main__':

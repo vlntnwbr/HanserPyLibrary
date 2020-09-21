@@ -1,29 +1,8 @@
-"""Exceptions and utility functions for hanser-py-library"""
+"""Global values and utility functions for hanser-py-library"""
 
-from dataclasses import dataclass
-from io import BytesIO
-from typing import Optional
+import textwrap
 
-
-class BookMetaError(Exception):
-    "Error that occurs while parsing website for the book"
-
-
-class BookMergeError(Exception):
-    """Error that occurs while merging the book"""
-
-
-class DownloadError(Exception):
-    """Exception that occurs while the book is downloaded"""
-
-
-@dataclass
-class Chapter:
-    """Container for titel, url and content of a book chapter"""
-
-    title: str
-    href: Optional[str] = None
-    content: Optional[BytesIO] = None
+HANSER_URL = "https://www.hanser-elibrary.com"
 
 
 def is_isbn(isbn: str, isbn10_allowed: bool = True) -> bool:
@@ -49,3 +28,26 @@ def is_isbn(isbn: str, isbn10_allowed: bool = True) -> bool:
         return False
 
     return bool(checksum == 0)
+
+
+def log(cat: str, msg: str, div: int = None, div_char: str = "-") -> None:
+    """Log categorized message with optional divider"""
+
+    if "\n" in msg:
+        msg = msg.replace("\n", "\n\t")
+
+    line_length, indent = 79, 10
+    log_msg = "{:" + str(indent) + "}{}"
+    message = textwrap.fill(
+        log_msg.format(cat.upper(), msg),
+        width=line_length,
+        tabsize=indent,
+        replace_whitespace=False,
+        subsequent_indent=" " * 10,
+    )
+
+    if div in (0, -1):
+        print(div_char * line_length)
+    print(message)
+    if div in (0, 1):
+        print(div_char * line_length)

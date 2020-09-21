@@ -9,3 +9,4 @@
 # Files
 requirements.txt
 **.pdf
+*.pyc

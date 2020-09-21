@@ -1,5 +1,6 @@
 """Hanser book downloader"""
 
+from dataclasses import dataclass
 from io import BytesIO
 import os
 from typing import List, Optional
@@ -8,14 +9,91 @@ from urllib.parse import urljoin
 from bs4 import BeautifulSoup
 from PyPDF2 import PdfFileMerger
 from requests import get
+import requests
 
-from .utils import BookMergeError, DownloadError, Chapter
+from .exceptions import AccessError, MetaError, MergeError, DownloadError
+from .utils import HANSER_URL
+
+
+@dataclass
+class Chapter:
+    """Container for title, url and content of a book chapter"""
+
+    title: str
+    href: Optional[str] = None
+    content: Optional[BytesIO] = None
+
+
+@dataclass
+class Book:
+    """Container for url, authors, chapters, isbn and title of book"""
+
+    url: str
+    authors: Optional[str] = None
+    chapters: Optional[List[Chapter]] = None
+    isbn: Optional[str] = None
+    title: Optional[str] = None
+
+
+class BookParser:  # pylint: disable=too-few-public-methods
+    """Search for book and retrieve metadata"""
+
+    def __init__(self, url: str) -> None:
+        self.isbn: str = url.rsplit("/", 1)[1]
+        self.url = url
+
+    def make_book(self) -> Book:
+        """Retrieve authors and title for book"""
+
+        response = requests.get(self.url)
+        book = BeautifulSoup(response.content, "html.parser")
+
+        if response.status_code in (404, 500):
+            raise AccessError(f"{self.url} returned {response.status_code}")
+
+        title_search = book.find("h1", class_="current-issue__title")
+        if title_search is None:
+            raise MetaError("no title found")
+        title = title_search.string.strip()
+
+        no_access = book.find("i", class_="icon-lock")
+        if no_access is not None:
+            raise AccessError(f"unauthorized to download '{title}'")
+
+        author_search = book.find_all("span", class_="hlFld-ContribAuthor")
+        if author_search is None:
+            raise MetaError("authors not found")
+
+        author_list = [author.string.strip() for author in author_search]
+        if len(author_list) > 1:
+            authors = f"{','.join(author_list[:-1])} and {author_list[-1]}"
+        else:
+            authors = author_list[0]
+
+        chapter_list = []
+        section_search = book.find_all("div", class_="issue-item__content")
+        for section in section_search:
+            chapter_search = section.find("div", class_="issue-item__title")
+            href_search = book.find("a", {"title": "PDF"})
+            if chapter_search is None or href_search is None:
+                raise MetaError("could not retrieve chapter list")
+            chapter_list.append(Chapter(
+                chapter_search.string, href_search.string
+            ))
+
+        return Book(self.url, authors, chapter_list, self.isbn, title)
+
+
+class DownloadManager:
+    """Download and save a book"""
+
+    def __init__(self, output_dir: str, force_dir: bool = False):
+        self.output_dir = output_dir
+        self.force_dir = force_dir
 
 
 class Application:
     """Application class."""
-
-    HANSER_URL = "https://www.hanser-elibrary.com"
 
     def __init__(self,
                  url: str,
@@ -38,22 +116,22 @@ class Application:
         """Get title, authors and chapters and check authorization."""
 
         response = get(self.url)
-        content = BeautifulSoup(response.content, "html.parser")
+        book = BeautifulSoup(response.content, "html.parser")
 
         if response.status_code in (404, 500):
-            raise DownloadError(content.find("p", class_="error").string)
+            raise DownloadError(book.find("p", class_="error").string)
 
-        self.title = content.find(
+        self.title = book.find(
             "div", id="articleToolsHeading").string.strip()
 
-        no_access = content.find("img", {"class": "accessIcon",
+        no_access = book.find("img", {"class": "accessIcon",
                                          "alt": "no access"})
 
         if no_access is not None:
             raise DownloadError(f"Unauthorized to download '{self.title}'")
 
         author_list = [author.string for author in
-                       content.find_all("span", class_="NLM_string-name")]
+                       book.find_all("span", class_="NLM_string-name")]
 
         self.authors = " ".join(
             " ".join(author_list[i].split(", ")[::-1]) + ","
@@ -63,7 +141,7 @@ class Application:
             else " ".join(author_list[i].split(", ")[::-1])
             for i in range(len(author_list)))
 
-        for chapter in content.find_all("table", class_="articleEntry"):
+        for chapter in book.find_all("table", class_="articleEntry"):
 
             chapter_title = chapter.find("span", class_="hlFld-Title").string
             href = chapter.find("a", class_="ref nowrap pdf")["href"]
@@ -76,7 +154,7 @@ class Application:
         """Download PDF content of each chapter"""
 
         for chapter in self.chapters:
-            url = urljoin(self.HANSER_URL, chapter.href)
+            url = urljoin(HANSER_URL, chapter.href)
             download = get(url, params={"download": "true"})
             content = download.headers["Content-Type"].split(";", 1)[0]
 
@@ -96,14 +174,14 @@ class Application:
         """Merges all PDFs in pdf_list into one file and saves it"""
 
         if not self.chapters:
-            raise BookMergeError("No PDFs to merge.")
+            raise MergeError("No PDFs to merge.")
 
         merged_pdf = PdfFileMerger()
         for pdf in self.chapters:
             merged_pdf.append(pdf.content)
 
         if len(merged_pdf.pages) <= 0:
-            raise BookMergeError("No book to save.")
+            raise MergeError("No book to save.")
 
         if not os.path.isdir(self.output_dir) and self.force_dir:
             os.makedirs(self.output_dir)
