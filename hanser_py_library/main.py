@@ -175,7 +175,7 @@ def main() -> None:
         log("info", f"Found '{book.title}' by {book.authors} "
             f"with {len(book.chapters)} chapters.", 1)
         for chapter in book.chapters:
-            log("download", f"{chapter.title}")
+            log("download", f"{chapter.title} at {chapter.href}.")
 
 
 if __name__ == '__main__':

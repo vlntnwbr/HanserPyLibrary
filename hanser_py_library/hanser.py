@@ -74,22 +74,14 @@ class BookParser:  # pylint: disable=too-few-public-methods
         section_search = book.find_all("div", class_="issue-item__content")
         for section in section_search:
             chapter_search = section.find("div", class_="issue-item__title")
-            href_search = book.find("a", {"title": "PDF"})
+            href_search = section.find("a", {"title": "PDF"})
             if chapter_search is None or href_search is None:
                 raise MetaError("could not retrieve chapter list")
             chapter_list.append(Chapter(
-                chapter_search.string, href_search.string
+                chapter_search.string, href_search["href"]
             ))
 
         return Book(self.url, authors, chapter_list, self.isbn, title)
-
-
-class DownloadManager:
-    """Download and save a book"""
-
-    def __init__(self, output_dir: str, force_dir: bool = False):
-        self.output_dir = output_dir
-        self.force_dir = force_dir
 
 
 class Application:

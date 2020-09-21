@@ -1,8 +1,8 @@
 name: Tests
 
-on: 
+on:
   push:
-    tags: 
+    tags:
       - v*
     branches:
       - master
@@ -18,7 +18,7 @@ jobs:
       uses: actions/setup-python@v1
       with:
         python-version: 3.8
-    - name: Set up Environment  # replace package name
+    - name: Set up Environment
       id: prep
       run: |
         python -m pip install -q --upgrade pip setuptools
@@ -29,7 +29,7 @@ jobs:
     - name: Run Flake8
       if: ${{ github.ref == 'refs/heads/master' }}
       id: flake8
-      run : pipenv run flake8 --exit-zero --doctests --max-doc-length 72 ${{ env.package }}
+      run : pipenv run flake8 --doctests --max-doc-length 72 ${{ env.package }}
     - name: Run Pylint
       if: ${{ github.ref == 'refs/heads/master' }}
       id: pylint
