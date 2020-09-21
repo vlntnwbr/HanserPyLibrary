@@ -180,16 +180,16 @@ def main() -> None:
             log("info", f"Found '{book.title}' by {book.authors} "
                 f"with {len(book.chapters)} chapters.")
             for i, chapter in enumerate(book.chapters):
-                log("download", f"{chapter.title}")
+                log("download", f"#{i} {chapter.title}")
                 book.chapters[i] = hanser.download_chapter(chapter)
         except (AccessError, DownloadError, MetaError) as exc:
             log("error", err_msg.format(exc.args[0]), div=0)
         except MergeError as exc:
-            raise
+            raise exc
         except KeyboardInterrupt:
             log("exit", "Operation cancelled by user", 0)
             sys.exit()
-    log("EXITING", "", -1)    
+    log("exit", "", -1)
 
 
 if __name__ == '__main__':

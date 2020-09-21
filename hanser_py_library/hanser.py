@@ -114,7 +114,8 @@ class DownloadManager:
     def write_book(self, book: Book) -> None:
         """Merge and write book into a single pdf file"""
 
-class Application: # pylint: disable=too-few-public-methods
+
+class Application:  # pylint: disable=too-few-public-methods
     """Application class."""
 
     def __init__(self,

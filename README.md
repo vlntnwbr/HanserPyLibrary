@@ -20,8 +20,15 @@ program was called, but you can provide a custom output directory.
 You cannot yet provide a custom output filename.
 
 ## Installation
-`pip install https://github.com/vlntnwbr/HanserPyLibrary/releases/latest/download/hanser-py-library.tar.gz`
-
+Installing through [pipx][1] isolates packages in their own environment and
+exposes their entrypoints via PATH.
+```
+pipx install https://github.com/vlntnwbr/HanserPyLibrary/releases/latest/download/choco-py.tar.gz
+```
+Alternatively install regularly via pip: 
+```
+pip install https://github.com/vlntnwbr/HanserPyLibrary/releases/latest/download/choco-py.tar.gz
+```
 *  Make sure you have Python Version 3.8 or greater
 
 ## Usage
@@ -65,3 +72,5 @@ needs to end with a valid ISBN-13 number. Valid URL formats include:
 
 #### Saving in a directory that may or may not exist
 `hanser -o path/to/dir -f hanser-elibrary.com/isbn/9783446450523`
+
+[1]: https://github.com/pipxproject/pipx
