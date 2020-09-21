@@ -80,16 +80,11 @@ class BookParser:  # pylint: disable=too-few-public-methods
             if chapter_search is None or href_search is None:
                 raise MetaError("could not retrieve chapter list")
             chapter_list.append(Chapter(
-                chapter_search.string, href_search["href"]
+                chapter_search.string,
+                href_search["href"].replace("epdf", "pdf")
             ))
 
-        return Book(
-            self.url,
-            authors,
-            chapter_list,
-            self.isbn,
-            title
-        )
+        return Book(self.url, authors, chapter_list, self.isbn, title)
 
 
 class DownloadManager:
@@ -116,8 +111,10 @@ class DownloadManager:
         chapter.content = download.content
         return chapter
 
+    def write_book(self, book: Book) -> None:
+        """Merge and write book into a single pdf file"""
 
-class Application:
+class Application: # pylint: disable=too-few-public-methods
     """Application class."""
 
     def __init__(self,

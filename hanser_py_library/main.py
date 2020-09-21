@@ -13,7 +13,7 @@ from typing import List, Tuple
 from urllib.parse import urlparse, urljoin
 
 from . import PROG_NAME, PROG_DESC
-from .exceptions import AccessError, DownloadError, MetaError
+from .exceptions import AccessError, DownloadError, MetaError, MergeError
 from .hanser import BookParser, DownloadManager
 from .utils import HANSER_URL, is_isbn, log
 
@@ -167,6 +167,7 @@ class HanserParser(ArgumentParser):
 def main() -> None:
     """Main entry point."""
 
+    log("info", "Starting hanser-py-library", 0)
     args = HanserParser()
     urls, dest, force = args.validate()
     hanser = DownloadManager(HANSER_URL, dest, force)
@@ -177,15 +178,18 @@ def main() -> None:
             log("info", f"Fetching book info for ISBN: {search.isbn}")
             book = search.make_book()
             log("info", f"Found '{book.title}' by {book.authors} "
-                f"with {len(book.chapters)} chapters.", 1)
+                f"with {len(book.chapters)} chapters.")
             for i, chapter in enumerate(book.chapters):
                 log("download", f"{chapter.title}")
                 book.chapters[i] = hanser.download_chapter(chapter)
         except (AccessError, DownloadError, MetaError) as exc:
-            log("error", err_msg.format(exc.args[0]), div=True)
+            log("error", err_msg.format(exc.args[0]), div=0)
+        except MergeError as exc:
+            raise
         except KeyboardInterrupt:
             log("exit", "Operation cancelled by user", 0)
             sys.exit()
+    log("EXITING", "", -1)    
 
 
 if __name__ == '__main__':

@@ -28,7 +28,7 @@ def is_isbn(isbn: str, isbn10_allowed: bool = True) -> bool:
     return bool(checksum == 0)
 
 
-def log(cat: str, msg: str, div: bool = False) -> None:
+def log(cat: str, msg: str, div: int = None) -> None:
     """Log categorized message with optional divider"""
 
     line_length, indent = 79, 10
@@ -37,8 +37,8 @@ def log(cat: str, msg: str, div: bool = False) -> None:
     if "\n" in msg:
         msg = msg.replace("\n", "\n" + " " * indent)
 
-    if div:
+    if div in (0, -1):
         print("-" * line_length)
     print(log_msg.format(cat.upper(), msg))
-    if div:
+    if div in (0, 1):
         print("-" * line_length)
