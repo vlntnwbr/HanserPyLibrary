@@ -48,6 +48,13 @@ def log(cat: str, msg: str, div: int = None) -> None:
         print("-" * line_length)
 
 
+def log_download(count: int, chapter: str, total: int) -> None:
+    """Logs download of a single chapter"""
+
+    leading = len(str(total)) - len(str(count))
+    log("download", f"# {'0' * leading}{count} - {chapter}...")
+
+
 def write_pdf(pdf: PdfFileMerger, dest: str, name: str) -> bool:
     """Writes content of pdf to a file at the given destination"""
 

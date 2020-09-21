@@ -39,7 +39,8 @@ class BookParser:  # pylint: disable=too-few-public-methods
 
     def __init__(self, url: str) -> None:
         self.isbn: str = url.rsplit("/", 1)[1]
-        self.url = url
+        self.url: str = url
+        self.book: BeautifulSoup = None
 
     def make_book(self) -> Book:
         """Retrieve authors and title for book"""
@@ -52,49 +53,55 @@ class BookParser:  # pylint: disable=too-few-public-methods
                 err_msg = f"{self.url} returned {response.status_code}"
             else:
                 err_msg = "Unable to establish connection to {self.url}"
-            raise AccessError(err_msg) from exc
+            raise MetaError(err_msg) from exc
 
-        book = BeautifulSoup(response.content, "html.parser")
-        title_search = book.find("h1", class_="current-issue__title")
-        if title_search is None:
-            raise MetaError("no title found")
-        title = title_search.string.strip()
+        self.book = BeautifulSoup(response.content, "html.parser")
+        title = self._get_title()
+        authors = self._get_authors()
+        chapters = self._get_chapters()
 
-        if book.find("i", class_="icon-lock") is not None:
+        if self.book.find("i", class_="icon-lock") is not None:
             raise AccessError(f"unauthorized to download '{title}'")
 
-        author_search = book.find_all("span", class_="hlFld-ContribAuthor")
-        if author_search is None:
-            raise MetaError("authors not found")
-
-        author_list = [author.string.strip() for author in author_search]
-        if len(author_list) > 1:
-            authors = f"{','.join(author_list[:-1])} and {author_list[-1]}"
-        else:
-            authors = author_list[0]
-
-        chapter_list = []
-        section_search = book.find_all("div", class_="issue-item__content")
-        for section in section_search:
-            chapter_search = section.find("div", class_="issue-item__title")
-            href_search = section.find("a", {"title": "PDF"})
-            if chapter_search is None or href_search is None:
-                raise MetaError("could not retrieve chapter list")
-            chapter_list.append(Chapter(
-                chapter_search.string,
-                href_search["href"].replace("epdf", "pdf")
-            ))
-
-        return Book(self.url, authors, chapter_list, self.isbn, title)
+        return Book(self.url, authors, chapters, self.isbn, title)
 
     def _get_authors(self) -> str:
         """Parses website for book authors"""
 
+        author_list = self.book.find_all("span", class_="hlFld-ContribAuthor")
+        if author_list is None:
+            raise MetaError("authors not found")
+
+        authors = [author.string.strip() for author in author_list]
+        if len(authors) > 1:
+            author_string = f"{','.join(authors[:-1])} and {authors[-1]}"
+        else:
+            author_string = authors[0]
+        return author_string
+
     def _get_chapters(self) -> List[Chapter]:
         """Parses website for chapter titles and references"""
 
+        chapters = []
+        chapter_list = self.book.find_all("div", class_="issue-item__content")
+        for chapter in chapter_list:
+            title_search = chapter.find("div", class_="issue-item__title")
+            href_search = chapter.find("a", {"title": "PDF"})
+            if title_search is None or href_search is None:
+                raise MetaError("could not retrieve chapter list")
+            chapters.append(Chapter(
+                title_search.string,
+                href_search["href"].replace("epdf", "pdf")
+            ))
+        return chapters
+
     def _get_title(self) -> str:
         """Parses website for book title"""
+
+        title_search = self.book.find("h1", class_="current-issue__title")
+        if title_search is None:
+            raise MetaError("no title found")
+        return title_search.string.strip()
 
 
 class DownloadManager:

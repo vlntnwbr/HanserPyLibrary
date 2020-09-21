@@ -78,7 +78,7 @@ if __name__ == '__main__':
         license="GNU GPLv3",
         url="https://github.com/vlntnwbr/HanserPyLibrary",
         maintainer="Valentin Weber",
-        maintainer_email="dev@example.com",
+        maintainer_email="vweber@stud.hs-heilbronn.de",
         entry_points={'console_scripts': [
             PROG_NAME + " = hanser_py_library.main:main"
         ]})

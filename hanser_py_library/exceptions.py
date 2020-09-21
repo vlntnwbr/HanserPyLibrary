@@ -6,12 +6,12 @@ class AccessError(Exception):
 
 
 class MetaError(Exception):
-    "Error that occurs while parsing website for the book"
+    "Raised on error during search for book information"
 
 
 class MergeError(Exception):
-    """Error that occurs while merging the book"""
+    """Raised on error while merging or saving the book"""
 
 
 class DownloadError(Exception):
-    """Exception that occurs while the book is downloaded"""
+    """Raised on error during download of a book chapter"""

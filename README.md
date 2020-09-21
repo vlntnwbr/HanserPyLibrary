@@ -29,7 +29,7 @@ pip install https://github.com/vlntnwbr/HanserPyLibrary/releases/latest/download
 
 ## Usage
 ```
-hanser [OPTIONS] URL(s) [URL, ...] --isbn [ISBN, ...]
+hanser [-h] [-o] [-f] [--isbn [[...]]] [URL [URL ...]]
 ```
 
 You must provide at least one valid URL or ISBN. The program will attempt
