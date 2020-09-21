@@ -1,8 +1,5 @@
 # hanser-py-library ![](https://github.com/vlntnwbr/hanserpylibrary/workflows/Tests/badge.svg)
 
-**Warning:** This software is currently broken, in part due to a redesign
-of <https://www.hanser-elibrary.com>
-
 This tool downloads each chapter of a book from *<https://www.hanser-elibrary.com>* 
 and merges them into a single PDF File called *{Booktitle}.pdf*. If the
 book's title contains characters that aren't allowed in a filename it
@@ -29,10 +26,11 @@ Alternatively install regularly via pip:
 ```
 pip install https://github.com/vlntnwbr/HanserPyLibrary/releases/latest/download/hanser-py-library.tar.gz
 ```
-*  Make sure you have Python Version 3.8 or greater
 
 ## Usage
-`hanser [OPTIONS] URL(s) [URL, ...] --isbn [ISBN, ...]`
+```
+hanser [OPTIONS] URL(s) [URL, ...] --isbn [ISBN, ...]
+```
 
 You must provide at least one valid URL or ISBN. The program will attempt
 to fix URLs with missing schemes by defaulting to "https://". Each URL
@@ -53,24 +51,28 @@ needs to end with a valid ISBN-13 number. Valid URL formats include:
 ### Options
 | **Short** | **Long** | **Description** |
 | :-: | :-: | :-- |
-| -h | --help | Show help message and exit program. |
-| -o | --out | Path to output directory. Relative and abstract paths supported. Cannot point towards file. <br> If the path starts with '~' it will be expanded from the user's home directory |
-| -f | --force | If set the output directory and every directory on the way will be forcibly created. |
+| -h | --help | Show help message and exit. |
+| -o | --out | Path to output directory. Relative and abstract paths supported. Cannot point towards file. <br> Paths starting with '~' it will be expanded from the user's home directory <br> Path must point towards existing directory unless `-f` is set.|
+| -f | --force | If set the output directory and every directory on the way will be forcibly created. <br> Exits if the directory cannot be created. |
 |    | --isbn | ISBN(s) of books(s) to download. Can be either ISBN-10 or 13. <br> If ISBN(s) and URL(s) are provided, ISBN books will be downloaded before URL books. |
 
 ### Examples
 #### Saving in current working directory
+```
+hanser https://www.hanser-elibrary.com/isbn/9783446450776
 
-`hanser https://www.hanser-elibrary.com/isbn/9783446450776`
+hanser https://www.hanser-elibrary.com/doi/book/10.3139/9783446450776
 
-`hanser https://www.hanser-elibrary.com/doi/book/10.3139/9783446450776`
-
-`hanser --isbn 9783446450776`
-
+hanser --isbn 9783446450776
+```
 #### Saving in a directory that exists
-`hanser -o path/to/dir hanser-elibrary.com/isbn/9783446450776`
+```
+hanser -o path/to/dir hanser-elibrary.com/isbn/9783446450776
+```
 
 #### Saving in a directory that may or may not exist
-`hanser -o path/to/dir -f hanser-elibrary.com/isbn/9783446450523`
+```
+hanser -o path/to/dir -f hanser-elibrary.com/isbn/9783446450523
+```
 
 [1]: https://github.com/pipxproject/pipx
