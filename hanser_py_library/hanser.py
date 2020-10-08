@@ -1,85 +1,65 @@
 """Hanser book downloader"""
 
-from dataclasses import dataclass
 from io import BytesIO
 import os
-from typing import List, Optional
 from urllib.parse import urljoin
+import re
+from typing import List
 
 from bs4 import BeautifulSoup
 from PyPDF2 import PdfFileMerger
 import requests
 
-from .exceptions import AccessError, MetaError, MergeError, DownloadError
-from .utils import write_pdf
+from .core.exceptions import AccessError, MetaError, MergeError, DownloadError
+from .core.models import Chapter, Book
+from .core.utils import write_pdf
 
 
-@dataclass
-class Chapter:
-    """Container for title, url and content of a book chapter"""
-
-    title: str
-    href: Optional[str] = None
-    content: Optional[BytesIO] = None
-
-
-@dataclass
-class Book:
-    """Container for url, authors, chapters, isbn and title of book"""
-
-    url: str
-    authors: Optional[str] = None
-    chapters: Optional[List[Chapter]] = None
-    isbn: Optional[str] = None
-    title: Optional[str] = None
-
-
-class BookParser:  # pylint: disable=too-few-public-methods
+class BookParser():
     """Search for book and retrieve metadata"""
 
     def __init__(self, url: str) -> None:
         self.isbn: str = url.rsplit("/", 1)[1]
         self.url: str = url
-        self.book: BeautifulSoup = None
-
-    def make_book(self) -> Book:
-        """Retrieve authors and title for book"""
 
         try:
             response = requests.get(self.url)
             response.raise_for_status()
         except requests.exceptions.RequestException as exc:
             if isinstance(exc, requests.exceptions.HTTPError):
-                err_msg = f"{self.url} returned {response.status_code}"
+                if response.status_code == 404:
+                    err_msg = f"Unable to locate book with ISBN {self.isbn}"
+                else:
+                    err_msg = f"{self.url} returned {response.status_code}"
             else:
-                err_msg = "Unable to establish connection to {self.url}"
+                err_msg = "Unable to establish connection"
             raise MetaError(err_msg) from exc
 
         self.book = BeautifulSoup(response.content, "html.parser")
-        title = self._get_title()
-        authors = self._get_authors()
-        chapters = self._get_chapters()
+
+    def make_book(self) -> Book:
+        """Collect all book metadata to prepare download"""
+
+        title = self.get_title()
+        authors = self.get_authors()
+        chapters = self.get_chapters()
+        year = self.get_year()
 
         if self.book.find("i", class_="icon-lock") is not None:
             raise AccessError(f"unauthorized to download '{title}'")
 
-        return Book(self.url, authors, chapters, self.isbn, title)
+        return Book(self.url, authors, chapters, self.isbn, title, year)
 
-    def _get_authors(self) -> str:
+    def get_authors(self) -> List[str]:
         """Parses website for book authors"""
 
         author_list = self.book.find_all("span", class_="hlFld-ContribAuthor")
-        if author_list is None:
+        if not author_list:
             raise MetaError("authors not found")
 
-        authors = [author.string.strip() for author in author_list]
-        if len(authors) > 1:
-            author_string = f"{','.join(authors[:-1])} and {authors[-1]}"
-        else:
-            author_string = authors[0]
-        return author_string
+        return [author.string.strip() for author in author_list]
 
-    def _get_chapters(self) -> List[Chapter]:
+    def get_chapters(self) -> List[BytesIO]:
         """Parses website for chapter titles and references"""
 
         chapters = []
@@ -95,13 +75,22 @@ class BookParser:  # pylint: disable=too-few-public-methods
             ))
         return chapters
 
-    def _get_title(self) -> str:
+    def get_title(self) -> str:
         """Parses website for book title"""
 
         title_search = self.book.find("h1", class_="current-issue__title")
         if title_search is None:
             raise MetaError("no title found")
         return title_search.string.strip()
+
+    def get_year(self) -> int:
+        """Parses website for the year the book was published"""
+
+        text_filter = re.compile(r"^© \d\d\d\d")
+        year = self.book.find("span", string=text_filter)
+        if year is None:
+            raise MetaError("year of publishing not found")
+        return int(year.string.strip()[2:6])
 
 
 class DownloadManager:
@@ -123,7 +112,15 @@ class DownloadManager:
             download = requests.get(url, params={"download": "true"})
             download.raise_for_status()
         except requests.exceptions.RequestException as exc:
-            raise DownloadError from exc
+            if isinstance(exc, requests.exceptions.HTTPError):
+                err_msg = f"{url} returned {download.status_code}"
+            elif isinstance(exc, requests.exceptions.Timeout):
+                err_msg = f"connection to {url} timed out"
+            elif isinstance(exc, requests.exceptions.ConnectionError):
+                err_msg = f"unable to reach {url}"
+            else:
+                err_msg = "failed to download chapter for unknown reason"
+            raise DownloadError(err_msg) from exc
 
         content = download.headers["Content-Type"].split(";")[0]
         if content != "application/pdf":

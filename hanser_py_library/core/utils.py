@@ -4,6 +4,8 @@ import os
 
 from PyPDF2 import PdfFileMerger
 
+# from .models import Book
+
 HANSER_URL = "https://www.hanser-elibrary.com"
 
 
@@ -35,7 +37,7 @@ def is_isbn(isbn: str, isbn10_allowed: bool = True) -> bool:
 def log(cat: str, msg: str, div: int = None) -> None:
     """Log categorized message with optional divider"""
 
-    line_length, indent = 79, 10
+    line_length, indent = 79, 12
     log_msg = "{:" + str(indent) + "}{}"
 
     if "\n" in msg:
