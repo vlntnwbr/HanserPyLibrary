@@ -176,17 +176,17 @@ def main() -> None:
 
     args = MainParser()
     urls, dest, dest_created = args.validate()
-    log = Logger(79, 10)
+    log = Logger(100, 12)
     log("", "Starting hanser-py-library", 0)
     if dest_created:
         log("info", f"Created output directory\n{dest}", 1)
     app = DownloadManager(HANSER_URL)
     for num, url in enumerate(urls, 1):
         try:
-            log(f"book {num}/{len(urls)}", f"Looking at {url}")
+            log(f"book {num}/{len(urls)}", f"{url}")
             search = BookParser(url)
             book = search.make_book()
-            log("found", f"{str(book)}", 1)
+            log("found", f"{str(book)}")
             if book.complete_available:
                 log("download", book.title)
                 book.contents = app.download_book(book.complete_available)
@@ -194,12 +194,12 @@ def main() -> None:
                 for i, chapter in enumerate(book.chapters):
                     log.download(i + 1, chapter.title, len(book.chapters))
                     book.chapters[i] = app.download_chapter(chapter)
-            log("info", f"Collecting '{book.title}'...")
+            log("collecting", f"{book.title}...")
             result = app.write_book(book, dest)
             log("saved", f"{result}", 1)
         except (AccessError, DownloadError, MetaError, MergeError) as exc:
             err_msg = "Skipped " + url + "\n{}"
-            log("error", err_msg.format(exc.args[0]), 1)
+            log("error", err_msg.format(exc.args[0]), 0)
         except KeyboardInterrupt:
             log("exit", "Operation cancelled by user", 1)
             sys.exit(1)
