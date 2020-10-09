@@ -41,7 +41,8 @@ jobs:
         version=$(python setup.py --version)
         echo "::set-env name=name::${name}"
         echo "::set-env name=sdist::${name}-${version}.tar.gz"
-        python setup.py sdist
+        echo "::set-env name=bdist::${name}-${version}.py3-none-any.whl"
+        python setup.py sdist bdist_wheel
     - name: Create Release
       if: ${{ startsWith( github.ref, 'refs/tags/v' ) }}
       id: release
@@ -63,4 +64,15 @@ jobs:
         upload_url: ${{ steps.release.outputs.upload_url }}
         asset_path: ./dist/${{ env.sdist }}
         asset_name: ${{ env.name }}.tar.gz
-        asset_content_type: application/gzip
+        asset_content_type: application/x-gzip
+    - name: Upload Wheel Distribution
+      if: ${{ startsWith( github.ref, 'refs/tags/v' ) }}
+      id: upload
+      uses: actions/upload-release-asset@v1.0.1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.release.outputs.upload_url }}
+        asset_path: ./dist/${{ env.bdist }}
+        asset_name: ${{ env.name }}.whl
+        asset_content_type: application/zip
