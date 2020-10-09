@@ -85,7 +85,7 @@ if __name__ == '__main__':
     create_requirements_txt()
     INSTALL_REQUIRES = read_requirements()
     README = open_local("README.md").read()
-    VERSION = "0.3.0"
+    VERSION = "0.3.1"
     setup(
         name="hanser-py-library",
         description=MAIN_DESC,
