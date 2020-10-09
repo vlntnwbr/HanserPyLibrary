@@ -10,7 +10,7 @@ from urllib.parse import urlparse, urljoin
 
 from .import PROG_DESC, PROG_NAME
 from .core.exceptions import AccessError, DownloadError, MetaError, MergeError
-from .core.utils import HANSER_URL, is_isbn, log, log_download
+from .core.utils import HANSER_URL, Logger, is_isbn
 from .hanser import BookParser, DownloadManager
 
 
@@ -166,15 +166,16 @@ def main() -> None:
 
     args = MainParser()
     urls, dest, force = args.validate()
+    log = Logger(79, 12)
     log("", "Starting hanser-py-library", 0)
     try:
         app = DownloadManager(HANSER_URL, dest, force)
     except PermissionError:
         log("exit", f"Could not create output dir {dest}", 1)
         sys.exit(1)
-    for url in urls:
+    for num, url in enumerate(urls, 1):
         try:
-            log("info", f"Looking for book @ {url}")
+            log(f"book {num}/{len(urls)}", f"Looking at {url}")
             search = BookParser(url)
             book = search.make_book()
             log("found book", f"{str(book)}")
@@ -184,11 +185,11 @@ def main() -> None:
                 book.contents = app.download_book(book.complete_available)
             else:
                 for i, chapter in enumerate(book.chapters):
-                    log_download(i + 1, chapter.title, len(book.chapters))
+                    log.download(i + 1, chapter.title, len(book.chapters))
                     book.chapters[i] = app.download_chapter(chapter)
             log("info", f"Collecting '{book.title}'...")
             result = app.write_book(book)
-            log("info", f"Saved book as {result}", 1)
+            log("saved book", f"{result}", 1)
         except (AccessError, DownloadError, MetaError, MergeError) as exc:
             err_msg = "Skipped " + url + "\n{}"
             log("error", err_msg.format(exc.args[0]), 0)

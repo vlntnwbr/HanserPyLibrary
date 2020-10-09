@@ -1,6 +1,7 @@
 """Utilities for hanser-py-library"""
 
 import os
+import textwrap
 from typing import Tuple
 
 from PyPDF2 import PdfFileMerger, PdfFileReader
@@ -33,27 +34,41 @@ def is_isbn(isbn: str, isbn10_allowed: bool = True) -> bool:
     return bool(checksum == 0)
 
 
-def log(cat: str, msg: str, div: int = None) -> None:
-    """Log categorized message with optional divider"""
+class Logger:
+    """Provide simple formatted console output methods"""
 
-    line_length, indent = 79, 12
-    log_msg = "{:" + str(indent) + "}{}"
+    def __init__(self, line_length: int, indent: int) -> None:
+        self.line_length = line_length
+        self.indent = indent
 
-    if "\n" in msg:
-        msg = msg.replace("\n", "\n" + " " * indent)
+    def download(self, count: int, chapter: str, total: int) -> None:
+        """Logs download of a single chapter"""
 
-    if div in (0, -1):
-        print("-" * line_length)
-    print(log_msg.format(cat.upper(), msg))
-    if div in (0, 1):
-        print("-" * line_length)
+        leading = len(str(total)) - len(str(count))
+        prefix = f"# {'0' * leading}{count} - "
 
+        if chapter is None:
+            chapter = f"Chapter {count}"
 
-def log_download(count: int, chapter: str, total: int) -> None:
-    """Logs download of a single chapter"""
+        msg = textwrap.fill(
+            prefix + chapter,
+            width=self.line_length - self.indent,
+            subsequent_indent=" " * len(prefix)
+        )
+        self("download", msg)
 
-    leading = len(str(total)) - len(str(count))
-    log("download", f"# {'0' * leading}{count} - {chapter}...")
+    def __call__(self, cat: str, msg: str, div: int = None) -> None:
+        """Log categorized message with optional divider"""
+
+        log_msg = "{:" + str(self.indent) + "}{}"
+        if "\n" in msg:
+            msg = msg.replace("\n", "\n" + " " * self.indent)
+
+        if div in (0, -1):
+            print("-" * self.line_length)
+        print(log_msg.format(cat.upper(), msg))
+        if div in (0, 1):
+            print("-" * self.line_length)
 
 
 class PdfManager:

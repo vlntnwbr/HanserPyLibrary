@@ -139,7 +139,7 @@ class DownloadManager:
         filename = book.title + "-" + str(book.year) + ".pdf"
         saved = pdf_helper.write(book.contents, filename)
         if not saved:
-            filename = book.isbn + "-" + str(book.year) + ".pdf"
+            filename = "ISBN_" + book.isbn + "-" + str(book.year) + ".pdf"
             saved = pdf_helper.write(book.contents, filename)
             if not saved:
                 raise MergeError(f"unable to save book as {filename}")

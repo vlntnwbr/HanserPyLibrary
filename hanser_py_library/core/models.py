@@ -41,6 +41,12 @@ class Book:
             authors = f"{self.authors[0]} and {self.authors[1]}"
         else:
             authors = f"{self.authors[:2]} et al."
-        return "{} ({}) \n{} ({} chapters)".format(
+
+        string = "{} ({}) \n{} ({} chapters)".format(
             self.title, self.year, authors, len(self.chapters)
         )
+
+        if self.complete_available:
+            string += "\nComplete Book PDF is available"
+
+        return string
