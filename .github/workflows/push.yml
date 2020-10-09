@@ -21,27 +21,26 @@ jobs:
     - name: Set up Environment
       id: prep
       run: |
-        python -m pip install -q --upgrade pip setuptools
-        pip install -q pipenv
+        python -m pip install -q --upgrade pip pipenv setuptools wheel
         pipenv install -d
         pipenv graph
-        echo "::set-env name=package::hanser_py_library"
+        echo "::set-output name=package::hanser_py_library"
     - name: Run Flake8
       if: ${{ github.ref == 'refs/heads/master' }}
       id: flake8
-      run : pipenv run flake8 --doctests --max-doc-length 72 ${{ env.package }}
+      run : pipenv run flake8 --doctests --max-doc-length 72 ${{ steps.prep.outputs.package }}
     - name: Run Pylint
       if: ${{ github.ref == 'refs/heads/master' }}
       id: pylint
-      run: pipenv run pylint -f colorized ${{ env.package }} || pipenv run pylint-exit -efail -wfail $?
+      run: pipenv run pylint -f colorized ${{ steps.prep.outputs.package }} || pipenv run pylint-exit -efail -wfail $?
     - name: Build Source Distribution
       id: build
       run: |
         name=$(python setup.py --name)
         version=$(python setup.py --version)
-        echo "::set-env name=name::${name}"
-        echo "::set-env name=sdist::${name}-${version}.tar.gz"
-        echo "::set-env name=bdist::${name}-${version}.py3-none-any.whl"
+        echo "::set-output name=name::${name}"
+        echo "::set-output name=sdist::${name}-${version}.tar.gz"
+        echo "::set-output name=bdist::${name}-${version}.py3-none-any.whl"
         python setup.py sdist bdist_wheel
     - name: Create Release
       if: ${{ startsWith( github.ref, 'refs/tags/v' ) }}
@@ -51,7 +50,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         tag_name: ${{ github.ref }}
-        release_name: ${{ env.name }} ${{ github.ref }}
+        release_name: ${{ steps.build.outputs.name }} ${{ github.ref }}
         body: |
           https:/github.com/vlntnwbr/HanserPyLibrary/tree/${{ github.ref }}
     - name: Upload Source Distribution
@@ -62,8 +61,8 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ steps.release.outputs.upload_url }}
-        asset_path: ./dist/${{ env.sdist }}
-        asset_name: ${{ env.name }}.tar.gz
+        asset_path: ./dist/${{ steps.build.outputs.sdist }}
+        asset_name: ${{ steps.build.outputs.name }}.tar.gz
         asset_content_type: application/x-gzip
     - name: Upload Wheel Distribution
       if: ${{ startsWith( github.ref, 'refs/tags/v' ) }}
@@ -73,6 +72,6 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ steps.release.outputs.upload_url }}
-        asset_path: ./dist/${{ env.bdist }}
-        asset_name: ${{ env.name }}.whl
+        asset_path: ./dist/${{ steps.build.outputs.bdist }}
+        asset_name: ${{ steps.build.outputs.name }}.whl
         asset_content_type: application/zip
