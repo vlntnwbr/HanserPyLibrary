@@ -1,8 +1,9 @@
 """Data Models for hanser-py-library"""
 
 from dataclasses import dataclass
-from io import BytesIO
 from typing import List, Optional
+
+from PyPDF2 import PdfFileMerger, PdfFileReader
 
 
 @dataclass
@@ -10,19 +11,21 @@ class Chapter:
     """Container for title, url and content of a book chapter"""
 
     title: str
-    href: Optional[str] = None
-    content: Optional[BytesIO] = None
+    href: str
+    content: Optional[PdfFileReader] = None
+
 
 @dataclass
 class Book:
     """Represents metadata for a book"""
 
-    url: str
     authors: List[str]
     chapters: List[Chapter]
     isbn: str
     title: str
+    url: str
     year: int
+    contents: Optional[PdfFileMerger] = None
 
     def __repr__(self):
         return f"{self.__class__}({self.__dict__})"
@@ -38,6 +41,6 @@ class Book:
             authors = f"{self.authors[0]} and {self.authors[1]}"
         else:
             authors = f"{self.authors[:2]} et al."
-        return "'{}' ({}) \n{} ({} chapters)".format(
+        return "{} ({}) \n{} ({} chapters)".format(
             self.title, self.year, authors, len(self.chapters)
         )

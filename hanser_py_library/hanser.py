@@ -7,12 +7,12 @@ import re
 from typing import List
 
 from bs4 import BeautifulSoup
-from PyPDF2 import PdfFileMerger
+from PyPDF2 import PdfFileReader
 import requests
 
 from .core.exceptions import AccessError, MetaError, MergeError, DownloadError
 from .core.models import Chapter, Book
-from .core.utils import write_pdf
+from .core.utils import PdfManager
 
 
 class BookParser():
@@ -48,7 +48,7 @@ class BookParser():
         if self.book.find("i", class_="icon-lock") is not None:
             raise AccessError(f"unauthorized to download '{title}'")
 
-        return Book(self.url, authors, chapters, self.isbn, title, year)
+        return Book(authors, chapters, self.isbn, title, self.url, year)
 
     def get_authors(self) -> List[str]:
         """Parses website for book authors"""
@@ -59,7 +59,7 @@ class BookParser():
 
         return [author.string.strip() for author in author_list]
 
-    def get_chapters(self) -> List[BytesIO]:
+    def get_chapters(self) -> List[Chapter]:
         """Parses website for chapter titles and references"""
 
         chapters = []
@@ -104,7 +104,7 @@ class DownloadManager:
         if not os.path.isdir(self.dest) and force_dest:
             os.makedirs(self.dest)
 
-    def download_chapter(self, chapter: Chapter) -> Chapter:
+    def download_chapter(self, chapter: Chapter) -> PdfFileReader:
         """Download chapter content"""
 
         url = urljoin(self.base_url, chapter.href)
@@ -125,30 +125,25 @@ class DownloadManager:
         content = download.headers["Content-Type"].split(";")[0]
         if content != "application/pdf":
             raise DownloadError(f"{download.url} did not send a pdf file")
-        chapter.content = BytesIO(download.content)
+        chapter.content = PdfFileReader(BytesIO(download.content))
         return chapter
 
     def write_book(self, book: Book) -> str:
         """Merge and write book into a single pdf file"""
 
-        if not book.chapters:
-            raise MergeError("chapter list is empty")
+        pdf_helper = PdfManager(self.dest)
+        book.contents = pdf_helper.merge_pdfs((
+            chapter.content for chapter in book.chapters
+        ))
 
-        merged_book = PdfFileMerger()
-        for chapter in book.chapters:
-            merged_book.append(chapter.content)
-
-        if len(merged_book.pages) <= 0:
+        if len(book.contents.pages) <= 0:
             raise MergeError("merged book contains no pages")
 
-        try:
-            filename = book.title
-            success = write_pdf(merged_book, self.dest, filename)
-            if not success:
-                filename = book.isbn
-                success = write_pdf(merged_book, self.dest, filename)
-                if not success:
-                    raise MergeError(f"unable to save book as {filename}.pdf")
-        except PermissionError as exc:
-            raise MergeError("book already exists") from exc
-        return filename + ".pdf"
+        filename = book.title + "-" + str(book.year) + ".pdf"
+        saved = pdf_helper.write(book.contents, filename)
+        if not saved:
+            filename = book.isbn + "-" + str(book.year) + ".pdf"
+            saved = pdf_helper.write(book.contents, filename)
+            if not saved:
+                raise MergeError(f"unable to save book as {filename}")
+        return saved

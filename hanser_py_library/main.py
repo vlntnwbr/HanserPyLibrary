@@ -177,7 +177,7 @@ def main() -> None:
             log("info", f"Looking for book @ {url}")
             search = BookParser(url)
             book = search.make_book()
-            log("info", f"Found {str(book)}")
+            log("found book", f"{str(book)}")
             for i, chapter in enumerate(book.chapters):
                 log_download(i + 1, chapter.title, len(book.chapters))
                 book.chapters[i] = app.download_chapter(chapter)
