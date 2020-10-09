@@ -11,7 +11,7 @@
 ::  - Scrum mit User Stories - 2017 (None chapter name)
 ::  - Total berechenbar? (unauthorized)
 
-py -m hanser_py_library.main ^
+py -m hanser_py_library.entrypoints.hanser ^
   --isbn ^
         9783446424401 ^
         1-888799-97-8 ^

@@ -1,1 +1,1 @@
-py -m hanser_py_library.main -h
+py -m hanser_py_library.entrypoints.hanser -h

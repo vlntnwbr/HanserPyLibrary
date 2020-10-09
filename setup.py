@@ -6,7 +6,7 @@ from typing import List, TextIO
 
 from setuptools import find_packages, setup
 
-from hanser_py_library import PROG_NAME, PROG_DESC
+from hanser_py_library import MAIN_NAME, MAIN_DESC
 
 REQUIREMENTS_TXT = "requirements.txt"
 HEREDIR = path.abspath(path.dirname(__file__))
@@ -68,7 +68,7 @@ if __name__ == '__main__':
     VERSION = "0.2.2"
     setup(
         name="hanser-py-library",
-        description=PROG_DESC,
+        description=MAIN_DESC,
         long_description=README,
         version=VERSION,
         packages=find_packages(),
@@ -80,5 +80,5 @@ if __name__ == '__main__':
         maintainer="Valentin Weber",
         maintainer_email="vweber@stud.hs-heilbronn.de",
         entry_points={'console_scripts': [
-            PROG_NAME + " = hanser_py_library.main:main"
+            MAIN_NAME + " = hanser_py_library.entrypoints.hanser:main"
         ]})

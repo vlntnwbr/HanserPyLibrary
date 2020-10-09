@@ -1,2 +1,2 @@
 :: Total Berechenbar?
-py -m hanser_py_library.main -f --isbn 9783446446991
+py -m hanser_py_library.entrypoints.hanser -f --isbn 9783446446991

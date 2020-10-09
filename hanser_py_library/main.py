@@ -1,209 +1,164 @@
-"""Main entry point for hanser-py-library"""
+"""Hanser book downloader"""
+
+from io import BytesIO
+from urllib.parse import urljoin
+import re
+from typing import List
+
+from bs4 import BeautifulSoup
+from PyPDF2 import PdfFileMerger, PdfFileReader
+import requests
+
+from .core.exceptions import AccessError, MetaError, MergeError, DownloadError
+from .core.models import Chapter, Book
+from .core.utils import PdfManager
 
 
-from argparse import ArgumentParser, ArgumentTypeError, RawTextHelpFormatter
-import os
-import sys
+class BookParser():
+    """Search for book and retrieve metadata"""
 
-from typing import List, Tuple
-from urllib.parse import urlparse, urljoin
+    def __init__(self, url: str) -> None:
+        self.isbn: str = url.rsplit("/", 1)[1]
+        self.url: str = url
 
-from .import PROG_DESC, PROG_NAME
-from .core.exceptions import AccessError, DownloadError, MetaError, MergeError
-from .core.utils import HANSER_URL, Logger, is_isbn, is_write_protected
-from .hanser import BookParser, DownloadManager
-
-class MainParser(ArgumentParser):
-    """ArgumentParser for hanser-py-library"""
-
-    def __init__(self) -> None:
-
-        example_url = urljoin(HANSER_URL, "/isbn/9783446450523")
-        usage_examples = "EXAMPLES:\n" + "\n".join((
-            f"{PROG_NAME} {example_url}",
-            f"{PROG_NAME} -o /existing_dir {example_url}",
-            f"{PROG_NAME} -o /dir/to/create -f {example_url} "
-        ))
-
-        super().__init__(
-            prog=PROG_NAME,
-            description=PROG_DESC,
-            epilog=usage_examples,
-            formatter_class=RawTextHelpFormatter,
-        )
-
-        self.add_args()
-
-    def add_args(self) -> None:
-        """Add arguments url, isbn, out and force to parser"""
-
-        self.add_argument(
-            "url",
-            metavar="URL",
-            help="URL(s) of book(s) to download",
-            type=self.is_application_url,
-            nargs="*"
-        )
-
-        self.add_argument(
-            "-o", "--out",
-            metavar="",
-            help="Path to output path. Cannot point to file.",
-            type=self.is_valid_dir_path,
-            default=os.getcwd()
-        )
-
-        self.add_argument(
-            "-f", "--force",
-            action="store_true",
-            help="Set this to force creation of path to output dir",
-            dest="force_dir"
-        )
-
-        self.add_argument(
-            "--isbn",
-            metavar="",
-            help="ISBN(s) of book(s) to download. Can be either ISBN-10 or 13",
-            type=self.isbn_to_hanser_url,
-            nargs="*",
-            default=[]
-        )
-
-    def validate(self) -> Tuple[List[str], str, bool]:
-        """Returns urls, output_dir and force_dir from parsed args"""
-
-        parsed = self.parse_args()
-
-        if not parsed.url and not parsed.isbn:
-            self.error(
-                "at least one of the following arguments is required: "
-                "URL, --isbn"
-            )
-
-        if parsed.out and not os.path.isdir(parsed.out):
-            if not parsed.force_dir:
-                self.error(f"Directory '{parsed.out}' doesn't exist and "
-                           f"-f/--force was not set")
-
-        return parsed.url + parsed.isbn, parsed.out, parsed.force_dir
-
-    @staticmethod
-    def isbn_to_hanser_url(isbn: str) -> str:
-        """Turn a valid isbn string into an URL for hanser-elibrary"""
-
-        if isbn:
-            if "-" in isbn:
-                isbn = isbn.replace("-", "")
-            if not is_isbn(isbn):
-                raise ArgumentTypeError(f"Invalid ISBN checksum for '{isbn}'")
-            return urljoin(HANSER_URL, "/".join(["isbn", isbn]))
-
-        return isbn
-
-    @staticmethod
-    def is_application_url(url: str) -> str:
-        """Check if URL is valid url for hanser-elibrary.com"""
-
-        hanser_url = urlparse(HANSER_URL)
-        parsed_url = urlparse(url.strip())
-
-        # Replace missing/invalid scheme and build correct netloc & path
-        if not parsed_url.scheme == hanser_url.scheme:
-            if not parsed_url.scheme:
-
-                path_elements = parsed_url.path.split("/", 1)
-                if len(path_elements) > 1:
-                    netloc, path = path_elements[0], path_elements[1]
-                else:
-                    netloc, path = path_elements[0], ""
-
-                parsed_url = parsed_url._replace(netloc=netloc, path=path)
-            parsed_url = parsed_url._replace(scheme="https")
-
-        # Check if URL is valid
-        if parsed_url.netloc not in (hanser_url.netloc, hanser_url.netloc[4:]):
-            raise ArgumentTypeError(f"Invalid Location: {parsed_url.netloc}")
-
-        path_list = [elem for elem in parsed_url.path.split("/") if elem]
-        path_str = "/".join(path_list)
-        path_err = "path must start with '{}' not '{}'"
-
-        if (elements := len(path_list)) != 2 and elements != 4:  # noqa pylint: disable=used-before-assignment
-            err = f"invalid amount of path elements in '{path_str}'"
-            raise ArgumentTypeError(err)
-
-        if elements == 4 and not path_str.startswith("doi/book/"):
-            err = path_err.format("doi/book/<DOI>", path_str)
-            raise ArgumentTypeError(err)
-
-        if elements == 2 and not path_list[0] == "isbn":
-            err = path_err.format("isbn", path_list[0])
-            raise ArgumentTypeError(err)
-
-        allow_isbn10 = bool(elements == 2)
-        if not is_isbn(path_list[-1], allow_isbn10):
-            err = f"url end {path_list[-1]} returns invalid ISBN checksum"
-            raise ArgumentTypeError(err)
-
-        return parsed_url._replace(path=path_str).geturl()
-
-    @staticmethod
-    def is_valid_dir_path(path: str) -> str:
-        """Expands user/abstract paths and fails if it leads to file"""
-
-        if path.startswith("~"):
-            path = os.path.normpath(os.path.expanduser(path))
-
-        if path.startswith("."):
-            path = os.path.abspath(path)
-
-        if os.path.isfile(path):
-            raise ArgumentTypeError(f"'{path}' points to a file")
-        return path
-
-
-def main() -> None:
-    """Entry point as specified by PROG_NAME"""
-
-    args = MainParser()
-    urls, dest, force = args.validate()
-    log = Logger(79, 10)
-    log("", "Starting hanser-py-library", 0)
-    try:
-        if not os.path.isdir(dest) and force:
-            os.makedirs(dest)
-            log("info", f"Created output directory\n{dest}", 1)
-        if is_write_protected(dest):
-            log("exit", f"No Permission to access output directory\n{dest}", 1)
-            sys.exit(1)
-    except PermissionError:
-        log("exit", f"Could not create output directory\n{dest}", 1)
-        sys.exit(1)
-    app = DownloadManager(HANSER_URL)
-    for num, url in enumerate(urls, 1):
         try:
-            log(f"book {num}/{len(urls)}", f"Looking at {url}")
-            search = BookParser(url)
-            book = search.make_book()
-            log("found", f"{str(book)}", 1)
-            if book.complete_available:
-                log("download", book.title)
-                book.contents = app.download_book(book.complete_available)
+            response = requests.get(self.url)
+            response.raise_for_status()
+        except requests.exceptions.RequestException as exc:
+            if isinstance(exc, requests.exceptions.HTTPError):
+                if response.status_code == 404:
+                    err_msg = f"Unable to locate book with ISBN {self.isbn}"
+                else:
+                    err_msg = f"{self.url} returned {response.status_code}"
             else:
-                for i, chapter in enumerate(book.chapters):
-                    log.download(i + 1, chapter.title, len(book.chapters))
-                    book.chapters[i] = app.download_chapter(chapter)
-            log("info", f"Collecting '{book.title}'...")
-            result = app.write_book(book, dest)
-            log("saved", f"{result}", 1)
-        except (AccessError, DownloadError, MetaError, MergeError) as exc:
-            err_msg = "Skipped " + url + "\n{}"
-            log("error", err_msg.format(exc.args[0]), 1)
-        except KeyboardInterrupt:
-            log("exit", "Operation cancelled by user", 1)
-            sys.exit(1)
-    log("finished", "exiting hanser-py-library", 1)
+                err_msg = "Unable to establish connection"
+            raise MetaError(err_msg) from exc
+
+        self.book = BeautifulSoup(response.content, "html.parser")
+
+    def make_book(self) -> Book:
+        """Collect all book metadata to prepare download"""
+
+        title = self.get_title()
+        authors = self.get_authors()
+        chapters = self.get_chapters()
+        year = self.get_year()
+        complete = self.get_complete_url()
+
+        if self.book.find("i", class_="icon-lock") is not None:
+            raise AccessError(f"unauthorized to download '{title}'")
+
+        return Book(authors, chapters, complete, self.isbn, title, year)
+
+    def get_authors(self) -> List[str]:
+        """Parses website for book authors"""
+
+        author_list = self.book.find_all("span", class_="hlFld-ContribAuthor")
+        if not author_list:
+            raise MetaError("authors not found")
+
+        return [author.string.strip() for author in author_list]
+
+    def get_chapters(self) -> List[Chapter]:
+        """Parses website for chapter titles and references"""
+
+        chapters = []
+        chapter_list = self.book.find_all("div", class_="issue-item__content")
+        for chapter in chapter_list:
+            title_search = chapter.find("div", class_="issue-item__title")
+            href_search = chapter.find("a", {"title": "PDF"})
+            if title_search is None or href_search is None:
+                raise MetaError("could not retrieve chapter list")
+            chapters.append(Chapter(
+                title_search.string,
+                href_search["href"].replace("epdf", "pdf")
+            ))
+        return chapters
+
+    def get_title(self) -> str:
+        """Parses website for book title"""
+
+        title_search = self.book.find("h1", class_="current-issue__title")
+        if title_search is None:
+            raise MetaError("no title found")
+        return title_search.string.strip()
+
+    def get_year(self) -> int:
+        """Parses website for the year the book was published"""
+
+        text_filter = re.compile(r"^© \d\d\d\d")
+        year = self.book.find("span", string=text_filter)
+        if year is None:
+            raise MetaError("year of publishing not found")
+        return int(year.string.strip()[2:6])
+
+    def get_complete_url(self) -> int:
+        """Gets download URL for complete book PDF"""
+
+        check = self.book.find("a", {"title": "Complete Book PDF"})
+        return "" if check is None else check["href"].replace("epdf", "pdf")
 
 
-if __name__ == '__main__':
-    main()
+class DownloadManager:
+    """Download and save a book"""
+
+    def __init__(self, base_url: str):
+        self.base_url = base_url
+
+    def download_chapter(self, chapter: Chapter) -> Chapter:
+        """Download chapter content"""
+
+        url = urljoin(self.base_url, chapter.href)
+        chapter.content = PdfFileReader(self._get_pdf(url))
+        return chapter
+
+    def download_book(self, url: str) -> PdfFileMerger:
+        """Download Complete book pdf"""
+        book = PdfFileMerger()
+        book.append(self._get_pdf(urljoin(self.base_url, url)))
+        return book
+
+    @staticmethod
+    def write_book(book: Book, dest: str) -> str:
+        """Merge and write book into a single pdf file"""
+
+        pdf_helper = PdfManager(dest)
+        if book.contents is None:
+            book.contents = pdf_helper.merge_pdfs((
+                chapter.content for chapter in book.chapters
+            ))
+
+        if len(book.contents.pages) <= 0:
+            raise MergeError("merged book contains no pages")
+
+        filename = book.title + "-" + str(book.year) + ".pdf"
+        saved = pdf_helper.write(book.contents, filename)
+        if not saved:
+            filename = "ISBN_" + book.isbn + "-" + str(book.year) + ".pdf"
+            saved = pdf_helper.write(book.contents, filename)
+            if not saved:
+                raise MergeError(f"unable to save book as {filename}")
+        return saved
+
+    @staticmethod
+    def _get_pdf(url: str) -> BytesIO:
+        """Send get request to url and check for Content-Type pdf"""
+
+        try:
+            download = requests.get(url, params={"download": "true"})
+            download.raise_for_status()
+        except requests.exceptions.RequestException as exc:
+            if isinstance(exc, requests.exceptions.HTTPError):
+                err_msg = f"{url} returned {download.status_code}"
+            elif isinstance(exc, requests.exceptions.Timeout):
+                err_msg = f"connection to {url} timed out"
+            elif isinstance(exc, requests.exceptions.ConnectionError):
+                err_msg = f"unable to reach {url}"
+            else:
+                err_msg = f"connection to {url} failed"
+            raise DownloadError(err_msg) from exc
+
+        content = download.headers["Content-Type"].split(";")[0]
+        if content != "application/pdf":
+            raise DownloadError(f"{download.url} did not send a pdf file")
+        return BytesIO(download.content)

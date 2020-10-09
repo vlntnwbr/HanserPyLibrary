@@ -31,24 +31,28 @@ pip install https://github.com/vlntnwbr/HanserPyLibrary/releases/latest/download
 
 ## Usage
 ```
-hanser [-h] [-o] [-f] [--isbn [[...]]] [URL [URL ...]]
+usage: hanser [-h] [--isbn [[...]]] [-o] [-f] [URL [URL ...]]
 ```
 
 You must provide at least one valid URL or ISBN. The program will attempt
 to fix URLs with missing schemes by defaulting to "https://". Each URL
-needs to end with a valid ISBN-13 number. Valid URL formats include:
+needs to end with a valid ISBN-10 or -13 number. Valid URL formats include:
 
 **Referencing by ISBN-10 or ISBN-13**
-* https://www.hanser-elibrary.com/isbn/{ISBN}
-* https://hanser-elibrary.com/isbn/{ISBN}
-* www.hanser-elibrary.com/isbn/{ISBN}
-* hanser-elibrary.com/isbn/{ISBN}
+```
+https://www.hanser-elibrary.com/isbn/{ISBN}
+https://hanser-elibrary.com/isbn/{ISBN}
+www.hanser-elibrary.com/isbn/{ISBN}
+hanser-elibrary.com/isbn/{ISBN}
+```
 
 **Referencing by DOI and ISBN-13**
-* https://www.hanser-elibrary.com/doi/book/{DOI}/{ISBN}
-* https://hanser-elibrary.com/doi/book/{DOI}/{ISBN}
-* www.hanser-elibrary.com/doi/book/{DOI}/{ISBN}
-* hanser-elibrary.com/doi/book/{DOI}/{ISBN}
+```
+https://www.hanser-elibrary.com/doi/book/{DOI}/{ISBN}
+https://hanser-elibrary.com/doi/book/{DOI}/{ISBN}
+www.hanser-elibrary.com/doi/book/{DOI}/{ISBN}
+hanser-elibrary.com/doi/book/{DOI}/{ISBN}
+```
 
 ### Options
 | **Short** | **Long** | **Description** |

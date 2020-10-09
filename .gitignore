@@ -1,10 +1,12 @@
 # Directories
 /downloads/
 /.vscode/
-/dist/
-/.venv/
-/.idea/
+**/dist/
+**/venv/
+**/.venv/
+**/.idea/
 **/__pycache__/
+**/build/
 *.egg-info/
 
 # Files
