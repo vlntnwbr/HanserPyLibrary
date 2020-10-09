@@ -28,11 +28,11 @@ jobs:
     - name: Run Flake8
       if: ${{ github.ref == 'refs/heads/master' }}
       id: flake8
-      run : pipenv run flake8 --doctests --max-doc-length 72 ${{ steps.prep.outputs.package }}
+      run : pipenv run flake8 --doctests --max-doc-length 72 ${{ steps.prep.outputs.package }} setup.py
     - name: Run Pylint
       if: ${{ github.ref == 'refs/heads/master' }}
       id: pylint
-      run: pipenv run pylint -f colorized ${{ steps.prep.outputs.package }} || pipenv run pylint-exit -efail -wfail $?
+      run: pipenv run pylint -f colorized ${{ steps.prep.outputs.package }} setup.py || pipenv run pylint-exit -efail -wfail $?
     - name: Build Source Distribution
       id: build
       run: |

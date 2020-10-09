@@ -1,1 +1,1 @@
-pylint -f colorized hanser_py_library
+pylint -f colorized hanser_py_library setup.py

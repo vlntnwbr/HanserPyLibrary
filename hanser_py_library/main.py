@@ -1,3 +1,23 @@
+##
+#   Copyright (c) 2020 Valentin Weber
+#
+#   This file is part of hanser-py-library.
+#
+#   hanser-py-library is free software: you can redistribute it and/or
+#   modify it under the terms of the GNU General Public License as
+#   published by the Free Software Foundation, either version 3 of the
+#   License, or (at your option) any later version.
+#
+#   hanser-py-library is distributed in the hope that it will be
+#   useful, but WITHOUT ANY WARRANTY; without even the implied warranty
+#   of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+#   General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License
+#   along with hanser-py-library. If not, see
+#   <https://www.gnu.org/licenses/#GPL>.
+##
+
 """Hanser book downloader"""
 
 from io import BytesIO
@@ -89,7 +109,7 @@ class BookParser():
         text_filter = re.compile(r"^© \d\d\d\d")
         year = self.book.find("span", string=text_filter)
         if year is None:
-            raise MetaError("year of publishing not found")
+            raise MetaError("year of publication not found")
         return int(year.string.strip()[2:6])
 
     def get_complete_url(self) -> int:
