@@ -1,20 +1,22 @@
 # hanser-py-library ![](https://github.com/vlntnwbr/hanserpylibrary/workflows/Tests/badge.svg)
 
-This tool downloads each chapter of a book from *<https://www.hanser-elibrary.com>* 
-and merges them into a single PDF File called *{Booktitle}.pdf*. If the
-book's title contains characters that aren't allowed in a filename it
-will be saved as *{ISBN}.pdf*.
-
-Unfortunately, it seems like links  within the merged book (e.g.
-chapter references) do not work.
-
-The tool will check whether you are authorized to access the book before
-downloading anything. If you are unauthorized, the book will be skipped.
+This tool downloads a book from *<https://www.hanser-elibrary.com>*  saves them
+to a PDF File called `<Book Title>-<Year>.pdf`. If the book's title contains
+characters that aren't allowed in a filename it will be saved as
+`<Book Title>-<Year>.pdf`. If files with that name already exist a the number
+of existing files will be appended to the chosen file name like this
+`<filename> (#)`.
 
 By default the merged book will be saved in the directory from which the
 program was called, but you can provide a custom output directory.
 
-You cannot yet provide a custom output filename.
+If a complete book pdf is available, the tool will preferably download that
+file, otherwise it will download each individual chapter and merge them into a
+single file before saving. Unfortunately, this leads to links within the merged
+book (e.g. chapter references) being broken.
+
+The tool will check whether you are authorized to access the book before
+downloading anything. If you are unauthorized, the book will be skipped.
 
 ## Installation
 Installing through [pipx][1] isolates packages in their own environment and

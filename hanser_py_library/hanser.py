@@ -7,7 +7,7 @@ import re
 from typing import List
 
 from bs4 import BeautifulSoup
-from PyPDF2 import PdfFileReader
+from PyPDF2 import PdfFileMerger, PdfFileReader
 import requests
 
 from .core.exceptions import AccessError, MetaError, MergeError, DownloadError
@@ -44,11 +44,12 @@ class BookParser():
         authors = self.get_authors()
         chapters = self.get_chapters()
         year = self.get_year()
+        complete = self.get_complete_url()
 
         if self.book.find("i", class_="icon-lock") is not None:
             raise AccessError(f"unauthorized to download '{title}'")
 
-        return Book(authors, chapters, self.isbn, title, self.url, year)
+        return Book(authors, chapters, complete, self.isbn, title, year)
 
     def get_authors(self) -> List[str]:
         """Parses website for book authors"""
@@ -92,6 +93,12 @@ class BookParser():
             raise MetaError("year of publishing not found")
         return int(year.string.strip()[2:6])
 
+    def get_complete_url(self) -> int:
+        """Gets download URL for complete book PDF"""
+
+        check = self.book.find("a", {"title": "Complete Book PDF"})
+        return "" if check is None else check["href"].replace("epdf", "pdf")
+
 
 class DownloadManager:
     """Download and save a book"""
@@ -104,37 +111,27 @@ class DownloadManager:
         if not os.path.isdir(self.dest) and force_dest:
             os.makedirs(self.dest)
 
-    def download_chapter(self, chapter: Chapter) -> PdfFileReader:
+    def download_chapter(self, chapter: Chapter) -> Chapter:
         """Download chapter content"""
 
         url = urljoin(self.base_url, chapter.href)
-        try:
-            download = requests.get(url, params={"download": "true"})
-            download.raise_for_status()
-        except requests.exceptions.RequestException as exc:
-            if isinstance(exc, requests.exceptions.HTTPError):
-                err_msg = f"{url} returned {download.status_code}"
-            elif isinstance(exc, requests.exceptions.Timeout):
-                err_msg = f"connection to {url} timed out"
-            elif isinstance(exc, requests.exceptions.ConnectionError):
-                err_msg = f"unable to reach {url}"
-            else:
-                err_msg = "failed to download chapter for unknown reason"
-            raise DownloadError(err_msg) from exc
-
-        content = download.headers["Content-Type"].split(";")[0]
-        if content != "application/pdf":
-            raise DownloadError(f"{download.url} did not send a pdf file")
-        chapter.content = PdfFileReader(BytesIO(download.content))
+        chapter.content = PdfFileReader(self._get_pdf(url))
         return chapter
+
+    def download_book(self, url: str) -> PdfFileMerger:
+        """Download Complete book pdf"""
+        book = PdfFileMerger()
+        book.append(self._get_pdf(urljoin(self.base_url, url)))
+        return book
 
     def write_book(self, book: Book) -> str:
         """Merge and write book into a single pdf file"""
 
         pdf_helper = PdfManager(self.dest)
-        book.contents = pdf_helper.merge_pdfs((
-            chapter.content for chapter in book.chapters
-        ))
+        if book.contents is None:
+            book.contents = pdf_helper.merge_pdfs((
+                chapter.content for chapter in book.chapters
+            ))
 
         if len(book.contents.pages) <= 0:
             raise MergeError("merged book contains no pages")
@@ -147,3 +144,26 @@ class DownloadManager:
             if not saved:
                 raise MergeError(f"unable to save book as {filename}")
         return saved
+
+    @staticmethod
+    def _get_pdf(url: str) -> BytesIO:
+        """Send get request to url and check for Content-Type pdf"""
+
+        try:
+            download = requests.get(url, params={"download": "true"})
+            download.raise_for_status()
+        except requests.exceptions.RequestException as exc:
+            if isinstance(exc, requests.exceptions.HTTPError):
+                err_msg = f"{url} returned {download.status_code}"
+            elif isinstance(exc, requests.exceptions.Timeout):
+                err_msg = f"connection to {url} timed out"
+            elif isinstance(exc, requests.exceptions.ConnectionError):
+                err_msg = f"unable to reach {url}"
+            else:
+                err_msg = f"connection to {url} failed"
+            raise DownloadError(err_msg) from exc
+
+        content = download.headers["Content-Type"].split(";")[0]
+        if content != "application/pdf":
+            raise DownloadError(f"{download.url} did not send a pdf file")
+        return BytesIO(download.content)

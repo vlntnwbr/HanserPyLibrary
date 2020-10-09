@@ -178,9 +178,14 @@ def main() -> None:
             search = BookParser(url)
             book = search.make_book()
             log("found book", f"{str(book)}")
-            for i, chapter in enumerate(book.chapters):
-                log_download(i + 1, chapter.title, len(book.chapters))
-                book.chapters[i] = app.download_chapter(chapter)
+            if book.complete_available:
+                log("info", "Complete Book PDF is available")
+                log("download", book.title)
+                book.contents = app.download_book(book.complete_available)
+            else:
+                for i, chapter in enumerate(book.chapters):
+                    log_download(i + 1, chapter.title, len(book.chapters))
+                    book.chapters[i] = app.download_chapter(chapter)
             log("info", f"Collecting '{book.title}'...")
             result = app.write_book(book)
             log("info", f"Saved book as {result}", 1)

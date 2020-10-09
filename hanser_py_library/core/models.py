@@ -21,9 +21,9 @@ class Book:
 
     authors: List[str]
     chapters: List[Chapter]
+    complete_available: str
     isbn: str
     title: str
-    url: str
     year: int
     contents: Optional[PdfFileMerger] = None
 

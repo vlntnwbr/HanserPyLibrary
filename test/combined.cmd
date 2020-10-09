@@ -3,7 +3,7 @@
 ::  - Clinical Neuropathology: Text and Color Atlas (isbn10 & not available)
 ::  - Technische Probleme lösen mit C/C++ (slash in filename)
 ::  - Wake Up! (no problems)
-::  - Scrum mit User Stories (isbn10)
+::  - Scrum mit User Stories (isbn10 & complete available)
 
 :: --isbn Book mapping
 ::  - Was kostet Qualität? (invalid char in filename)
