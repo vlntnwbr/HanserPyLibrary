@@ -56,7 +56,7 @@ needs to end with a valid ISBN-13 number. Valid URL formats include:
 | -h | --help | Show help message and exit. |
 | -o | --out | Path to output directory. Relative and abstract paths supported. Cannot point towards file. <br> Paths starting with '~' it will be expanded from the user's home directory <br> Path must point towards existing directory unless `-f` is set.|
 | -f | --force | If set the output directory and every directory on the way will be forcibly created. <br> Exits if the directory cannot be created. |
-|    | --isbn | ISBN(s) of books(s) to download. Can be either ISBN-10 or 13. <br> If ISBN(s) and URL(s) are provided, ISBN books will be downloaded before URL books. |
+|    | --isbn | ISBNs of books to download. Can be either ISBN-10 or 13. <br> If you want to provide both ISBNs and URLs, provide URLs first like this: <br> `hanser [URL [URL ...]] [--isbn [[...]]]`<br> If ISBN(s) and URL(s) are provided, URL books will be downloaded before ISBN books.|
 
 ### Examples
 #### Saving in current working directory

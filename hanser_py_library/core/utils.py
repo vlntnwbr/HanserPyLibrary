@@ -34,6 +34,19 @@ def is_isbn(isbn: str, isbn10_allowed: bool = True) -> bool:
     return bool(checksum == 0)
 
 
+def is_write_protected(path: str) -> bool:
+    """Return true if gived directory is write protected"""
+
+    dest = PdfManager.append_file_count(os.path.join(path, "access.txt"))
+    try:
+        with open(dest, "w"):
+            pass
+    except PermissionError:
+        return True
+    os.remove(dest)
+    return False
+
+
 class Logger:
     """Provide simple formatted console output methods"""
 
@@ -80,8 +93,19 @@ class PdfManager:
     def write(self, pdf: PdfFileMerger, name: str) -> str:
         """Writes content of pdf to a file with given name"""
 
-        dest = os.path.join(self.out_dir, name)
-        # Append file count to name if other files with same name exist
+        dest = self.append_file_count(os.path.join(self.out_dir, name))
+        try:
+            pdf.write(dest)
+            return os.path.split(dest)[1]
+        except (FileNotFoundError, OSError):
+            # FileNotFound for name containing "/"
+            # OSError for other invalid chars in name
+            return ""
+
+    @staticmethod
+    def append_file_count(dest: str) -> str:
+        """Append file count to dest if files with same name exist"""
+
         file_count = 0
         while True:
             if not os.path.isfile(dest):
@@ -94,14 +118,7 @@ class PdfManager:
             else:
                 names[0] = names[0].rsplit("(", 1)[0] + f"({file_count})"
             dest = ".".join(names)
-
-        try:
-            pdf.write(dest)
-            return os.path.split(dest)[1]
-        except (FileNotFoundError, OSError):
-            # FileNotFound for name containing "/"
-            # OSError for other invalid chars in name
-            return ""
+        return dest
 
     @staticmethod
     def merge_pdfs(pdf_files: Tuple[PdfFileReader]) -> PdfFileMerger:

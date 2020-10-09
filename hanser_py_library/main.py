@@ -10,9 +10,8 @@ from urllib.parse import urlparse, urljoin
 
 from .import PROG_DESC, PROG_NAME
 from .core.exceptions import AccessError, DownloadError, MetaError, MergeError
-from .core.utils import HANSER_URL, Logger, is_isbn
+from .core.utils import HANSER_URL, Logger, is_isbn, is_write_protected
 from .hanser import BookParser, DownloadManager
-
 
 class MainParser(ArgumentParser):
     """ArgumentParser for hanser-py-library"""
@@ -78,14 +77,15 @@ class MainParser(ArgumentParser):
         if not parsed.url and not parsed.isbn:
             self.error(
                 "at least one of the following arguments is required: "
-                "URL, --isbn")
+                "URL, --isbn"
+            )
 
         if parsed.out and not os.path.isdir(parsed.out):
             if not parsed.force_dir:
                 self.error(f"Directory '{parsed.out}' doesn't exist and "
                            f"-f/--force was not set")
 
-        return parsed.isbn + parsed.url, parsed.out, parsed.force_dir
+        return parsed.url + parsed.isbn, parsed.out, parsed.force_dir
 
     @staticmethod
     def isbn_to_hanser_url(isbn: str) -> str:
@@ -97,6 +97,7 @@ class MainParser(ArgumentParser):
             if not is_isbn(isbn):
                 raise ArgumentTypeError(f"Invalid ISBN checksum for '{isbn}'")
             return urljoin(HANSER_URL, "/".join(["isbn", isbn]))
+
         return isbn
 
     @staticmethod
@@ -141,7 +142,7 @@ class MainParser(ArgumentParser):
 
         allow_isbn10 = bool(elements == 2)
         if not is_isbn(path_list[-1], allow_isbn10):
-            err = f"path end {path_list[-1]} returns invalid ISBN checksum"
+            err = f"url end {path_list[-1]} returns invalid ISBN checksum"
             raise ArgumentTypeError(err)
 
         return parsed_url._replace(path=path_str).geturl()
@@ -166,21 +167,26 @@ def main() -> None:
 
     args = MainParser()
     urls, dest, force = args.validate()
-    log = Logger(79, 12)
+    log = Logger(79, 10)
     log("", "Starting hanser-py-library", 0)
     try:
-        app = DownloadManager(HANSER_URL, dest, force)
+        if not os.path.isdir(dest) and force:
+            os.makedirs(dest)
+            log("info", f"Created output directory\n{dest}", 1)
+        if is_write_protected(dest):
+            log("exit", f"No Permission to access output directory\n{dest}", 1)
+            sys.exit(1)
     except PermissionError:
-        log("exit", f"Could not create output dir {dest}", 1)
+        log("exit", f"Could not create output directory\n{dest}", 1)
         sys.exit(1)
+    app = DownloadManager(HANSER_URL)
     for num, url in enumerate(urls, 1):
         try:
             log(f"book {num}/{len(urls)}", f"Looking at {url}")
             search = BookParser(url)
             book = search.make_book()
-            log("found book", f"{str(book)}")
+            log("found", f"{str(book)}", 1)
             if book.complete_available:
-                log("info", "Complete Book PDF is available")
                 log("download", book.title)
                 book.contents = app.download_book(book.complete_available)
             else:
@@ -188,11 +194,11 @@ def main() -> None:
                     log.download(i + 1, chapter.title, len(book.chapters))
                     book.chapters[i] = app.download_chapter(chapter)
             log("info", f"Collecting '{book.title}'...")
-            result = app.write_book(book)
-            log("saved book", f"{result}", 1)
+            result = app.write_book(book, dest)
+            log("saved", f"{result}", 1)
         except (AccessError, DownloadError, MetaError, MergeError) as exc:
             err_msg = "Skipped " + url + "\n{}"
-            log("error", err_msg.format(exc.args[0]), 0)
+            log("error", err_msg.format(exc.args[0]), 1)
         except KeyboardInterrupt:
             log("exit", "Operation cancelled by user", 1)
             sys.exit(1)

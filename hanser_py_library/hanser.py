@@ -1,7 +1,6 @@
 """Hanser book downloader"""
 
 from io import BytesIO
-import os
 from urllib.parse import urljoin
 import re
 from typing import List
@@ -103,13 +102,8 @@ class BookParser():
 class DownloadManager:
     """Download and save a book"""
 
-    def __init__(self, base_url: str, dest: str, force_dest: bool = False):
+    def __init__(self, base_url: str):
         self.base_url = base_url
-        self.dest = dest
-        self.force_dest = force_dest
-
-        if not os.path.isdir(self.dest) and force_dest:
-            os.makedirs(self.dest)
 
     def download_chapter(self, chapter: Chapter) -> Chapter:
         """Download chapter content"""
@@ -124,10 +118,11 @@ class DownloadManager:
         book.append(self._get_pdf(urljoin(self.base_url, url)))
         return book
 
-    def write_book(self, book: Book) -> str:
+    @staticmethod
+    def write_book(book: Book, dest: str) -> str:
         """Merge and write book into a single pdf file"""
 
-        pdf_helper = PdfManager(self.dest)
+        pdf_helper = PdfManager(dest)
         if book.contents is None:
             book.contents = pdf_helper.merge_pdfs((
                 chapter.content for chapter in book.chapters
