@@ -104,7 +104,7 @@ if __name__ == '__main__':
         license="GNU GPLv3",
         url=GITHUB,
         author="Valentin Weber",
-        author_email="dev@vweber.eu"
+        author_email="dev@vweber.eu",
         maintainer="Valentin Weber",
         maintainer_email="dev@vweber.eu",
         project_urls={"Bug Tracker": GITHUB + "/issues?q=label%3bug"},

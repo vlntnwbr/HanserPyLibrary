@@ -21,9 +21,8 @@ along with hanser-py-library. If not, see <https://www.gnu.org/licenses/#GPL>.
 This tool downloads a book from *<https://www.hanser-elibrary.com>*  saves them
 to a PDF File called `<Book Title>-<Year>.pdf`. If the book's title contains
 characters that aren't allowed in a filename it will be saved as
-`<Book ISBN>-<Year>.pdf`. If files with that name already exist a the number
-of existing files will be appended to the chosen file name like this
-`<filename> (#)`.
+`<Book ISBN>-<Year>.pdf`. If files with that name already exist the number of
+existing files will be appended to the chosen file name like this `<filename> (#)`.
 
 By default the merged book will be saved in the directory from which the
 program was called, but you can provide a custom output directory.
@@ -40,11 +39,11 @@ downloading anything. If you are unauthorized, the book will be skipped.
 Installing through [pipx][1] isolates packages in their own environment and
 exposes their entrypoints via PATH.
 ```
-pipx install https://github.com/vlntnwbr/HanserPyLibrary/releases/latest/download/hanser-py-library.tar.gz
+pipx install hanser-py-library
 ```
 Alternatively install regularly via pip: 
 ```
-pip install https://github.com/vlntnwbr/HanserPyLibrary/releases/latest/download/hanser-py-library.tar.gz
+pip install hanser-py-library
 ```
 
 ## Usage
