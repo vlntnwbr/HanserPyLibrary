@@ -31,6 +31,10 @@ from hanser_py_library import MAIN_NAME, MAIN_DESC
 REQUIREMENTS_TXT = "requirements.txt"
 HEREDIR = path.abspath(path.dirname(__file__))
 
+PROG = "hanser-py-library"
+VERSION = "0.3.1"
+GITHUB = "https://github.com/vlntnwbr/HanserPyLibrary"
+
 
 def open_local(filename: str, mode: str = "r") -> TextIO:
     """Open file in this directory."""
@@ -77,28 +81,46 @@ def read_requirements() -> List[str]:
     """Read lines of requirements.txt and return them as list"""
 
     with open_local(REQUIREMENTS_TXT) as file:
-        return [line.strip() for line in file.readlines()
-                if line and not line.startswith("#")]
+        return [
+            line.strip() for line in file.readlines()
+            if line and not line.startswith("#") and not line.startswith("-i")
+        ]
 
 
 if __name__ == '__main__':
     create_requirements_txt()
     INSTALL_REQUIRES = read_requirements()
     README = open_local("README.md").read()
-    VERSION = "0.3.1"
     setup(
-        name="hanser-py-library",
+        name=PROG,
         description=MAIN_DESC,
         long_description=README,
+        long_description_content_type="text/markdown",
         version=VERSION,
         packages=find_packages(),
         include_package_data=True,
         python_requires=">=3.8",
         install_requires=INSTALL_REQUIRES,
         license="GNU GPLv3",
-        url="https://github.com/vlntnwbr/HanserPyLibrary",
+        url=GITHUB,
+        author="Valentin Weber",
+        author_email="dev@vweber.eu"
         maintainer="Valentin Weber",
-        maintainer_email="vweber@stud.hs-heilbronn.de",
+        maintainer_email="dev@vweber.eu",
+        project_urls={"Bug Tracker": GITHUB + "/issues?q=label%3bug"},
         entry_points={'console_scripts': [
             MAIN_NAME + " = hanser_py_library.entrypoints.hanser:main"
-        ]})
+        ]},
+        classifiers=[
+            "Development Status :: 4 - Beta",
+            "Environment :: Console",
+            "Intended Audience :: Education",
+            "Intended Audience :: Science/Research",
+            "License :: OSI Approved :: GNU Affero General Public License v3",
+            "Operating System :: OS Independent",
+            "Programming Language :: Python :: 3 :: Only",
+            "Topic :: Education",
+            "Topic :: Scientific/Engineering",
+            "Topic :: Utilities"
+        ]
+    )

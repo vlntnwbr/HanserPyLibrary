@@ -99,4 +99,10 @@ hanser -o path/to/dir hanser-elibrary.com/isbn/9783446450776
 hanser -o path/to/dir -f hanser-elibrary.com/isbn/9783446450523
 ```
 
+## Encountered a Bug?
+Feel free to [open an issue][new-issue] if you encountered bugs or have other
+ideas that aren't yet listed in the [backlog][issues].
+
 [1]: https://github.com/pipxproject/pipx
+[new-issue]: https://github.com/vlntnwbr/HanserPyLibrary/issues/new/choose
+[issues]: https://github.com/vlntnwbr/HanserPyLibrary/issues
