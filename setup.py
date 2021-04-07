@@ -32,7 +32,7 @@ REQUIREMENTS_TXT = "requirements.txt"
 HEREDIR = path.abspath(path.dirname(__file__))
 
 PROG = "hanser-py-library"
-VERSION = "0.3.3"
+VERSION = "0.3.2"
 GITHUB = "https://github.com/vlntnwbr/HanserPyLibrary"
 
 
