@@ -64,8 +64,11 @@ class BookParser():
         chapters = self.get_chapters()
         year = self.get_year()
         complete = self.get_complete_url()
+        unauthorized_check = self.book.find(
+            "i", {"class": "icon-lock", "aria-hidden": "true"}
+        )
 
-        if self.book.find("i", class_="icon-lock") is not None:
+        if unauthorized_check is not None:
             raise AccessError(f"unauthorized to download '{title}'")
 
         return Book(authors, chapters, complete, self.isbn, title, year)
