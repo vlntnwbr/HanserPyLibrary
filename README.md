@@ -19,10 +19,10 @@ along with hanser-py-library. If not, see <https://www.gnu.org/licenses/#GPL>.
 # hanser-py-library ![](https://github.com/vlntnwbr/hanserpylibrary/workflows/Tests/badge.svg)
 
 This tool downloads a book from *<https://www.hanser-elibrary.com>*  saves them
-to a PDF File called `<Book Title>-<Year>.pdf`. If the book's title contains
+to a PDF File called *<Book Title>-<Year>.pdf*. If the book's title contains
 characters that aren't allowed in a filename it will be saved as
-`<Book ISBN>-<Year>.pdf`. If files with that name already exist the number of
-existing files will be appended to the chosen file name like this `<filename> (#)`.
+*<Book ISBN>-<Year>.pdf*. If files with that name already exist the number of
+existing files will be appended to the chosen file name like this *<filename> (#)*.
 
 By default the merged book will be saved in the directory from which the
 program was called, but you can provide a custom output directory.
@@ -48,7 +48,7 @@ pip install hanser-py-library
 
 ## Usage
 ```
-usage: hanser [-h] [--isbn [[...]]] [-o] [-f] [URL [URL ...]]
+usage: hanser [-h] [--isbn [[...]]] [-o PATH] [-f] [URL [URL ...]]
 ```
 
 You must provide at least one valid URL or ISBN. The program will attempt

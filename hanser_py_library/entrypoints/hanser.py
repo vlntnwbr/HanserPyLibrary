@@ -77,8 +77,8 @@ class MainParser(ArgumentParser):
 
         self.add_argument(
             "-o", "--out",
-            metavar="",
-            help="Path to custom output dir. Cannot point to file.",
+            metavar="PATH",
+            help="Path to custom output directory. Cannot point to file.",
             type=self.is_valid_dir_path,
             default=os.getcwd()
         )
@@ -86,7 +86,7 @@ class MainParser(ArgumentParser):
         self.add_argument(
             "-f", "--force",
             action="store_true",
-            help="Set this to force creation of path to output dir",
+            help="Set this to force creation of the output directory",
             dest="force_dir"
         )
 
